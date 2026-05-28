@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-peach: hsl(15 86% 85%);
+  --color-lavender: hsl(260 40% 85%);
+  --color-sage: hsl(130 30% 85%);
+
+  --font-sans: 'Noto Sans KR', sans-serif;
+  --font-display: 'Gowun Dodum', sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+}
+
+/* LIGHT MODE - WARM PASTEL */
+:root {
+  --background: 40 33% 98%; /* Warm cream */
+  --foreground: 20 14% 25%; /* Deep warm gray/brown */
+  
+  --border: 30 20% 90%;
+  --input: 30 20% 90%;
+  --ring: 15 86% 75%; /* Peach ring */
+
+  --card: 0 0% 100%;
+  --card-foreground: 20 14% 25%;
+  --card-border: 30 20% 92%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14% 25%;
+  --popover-border: 30 20% 92%;
+
+  --primary: 15 86% 75%; /* Soft Peach */
+  --primary-foreground: 20 14% 25%;
+  --primary-border: 15 86% 65%;
+
+  --secondary: 260 40% 85%; /* Soft Lavender */
+  --secondary-foreground: 260 40% 25%;
+  --secondary-border: 260 40% 75%;
+
+  --muted: 30 20% 94%;
+  --muted-foreground: 20 10% 55%;
+  --muted-border: 30 20% 88%;
+
+  --accent: 130 30% 85%; /* Soft Sage */
+  --accent-foreground: 130 30% 25%;
+  --accent-border: 130 30% 75%;
+
+  --destructive: 0 70% 80%; /* Soft Red */
+  --destructive-foreground: 0 70% 25%;
+  --destructive-border: 0 70% 70%;
+
+  --radius: 1rem;
+  
+  --shadow-sm: 0 2px 8px -2px rgba(20, 15, 10, 0.05);
+  --shadow-md: 0 8px 24px -4px rgba(20, 15, 10, 0.08);
+  --shadow-lg: 0 16px 32px -8px rgba(20, 15, 10, 0.1);
+}
+
+/* DARK MODE - GENTLE NIGHT */
+.dark {
+  --background: 220 20% 12%; /* Deep soft navy */
+  --foreground: 220 13% 96%; /* #F3F4F6 – max contrast primary text */
+  
+  --border: 220 20% 22%;
+  --input: 220 20% 22%;
+  --ring: 15 60% 60%; 
+
+  --card: 220 20% 16%;
+  --card-foreground: 220 13% 96%;
+  --card-border: 220 20% 24%;
+
+  --popover: 220 20% 16%;
+  --popover-foreground: 220 13% 96%;
+  --popover-border: 220 20% 24%;
+
+  --primary: 15 60% 55%; /* Deeper Peach */
+  --primary-foreground: 40 33% 98%;
+  --primary-border: 15 60% 45%;
+
+  --secondary: 260 30% 60%; /* Deeper Lavender */
+  --secondary-foreground: 40 33% 98%;
+  --secondary-border: 260 30% 50%;
+
+  --muted: 220 20% 20%;
+  --muted-foreground: 218 11% 65%; /* #9CA3AF */
+  --muted-border: 220 20% 26%;
+
+  --accent: 130 20% 45%;
+  --accent-foreground: 40 33% 98%;
+  --accent-border: 130 20% 35%;
+
+  --destructive: 0 50% 50%;
+  --destructive-foreground: 40 33% 98%;
+  --destructive-border: 0 50% 40%;
+}
+
+/* ── Extra dark-mode accessibility overrides ────────────────────────────── */
+.dark ::placeholder {
+  color: #94A3B8 !important;
+  opacity: 1;
+}
+.dark input,
+.dark textarea,
+.dark select {
+  color: #F3F4F6;
+  border-color: hsl(220 20% 28%);
+}
+.dark input:focus,
+.dark textarea:focus {
+  border-color: hsl(15 60% 55% / 0.6);
+}
+
+/* Reflection comment bubble — dark mode */
+.dark .bg-\[\#f5f0ff\] {
+  background-color: #1e1b2d !important;
+}
+.dark .border-\[\#e4d8ff\] {
+  border-color: #342d4a !important;
+}
+
+/* Reminder banner — dark mode warm amber */
+.dark .bg-amber-50 {
+  background-color: rgba(120, 80, 10, 0.18) !important;
+}
+.dark .border-amber-200 {
+  border-color: rgba(180, 120, 20, 0.3) !important;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground transition-colors duration-500 selection:bg-primary/30;
+    /* Soften the scrollbar for webkit */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      @apply bg-muted-foreground/30 rounded-full;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-bold;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Shared flat card surface — no shadows, 1px soft border, 20px radius */
+  .surface-card {
+    @apply bg-card border border-card-border rounded-xl;
+  }
+  
+  .glass-panel {
+    @apply bg-background/70 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-lg;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

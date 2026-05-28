@@ -1,0 +1,32 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "9SsgJVezJ7bmH8GVxigan"
+uri = "file://artifacts/onul-letter/public/icons/app-icon-1024.png"
+type = "image"
+title = "App Icon — Master 1024×1024"
+
+[[outputs]]
+id = "Mhfr54IbiaTBsUOox3ggb"
+uri = "file://artifacts/onul-letter/public/icons/app-icon-512.png"
+type = "image"
+title = "App Icon — 512×512 (iOS / favicon)"
+
+[[outputs]]
+id = "P29dkhyMDeYiK3nDTvOz-"
+uri = "file://artifacts/onul-letter/public/icons/app-icon-192.png"
+type = "image"
+title = "App Icon — 192×192 (Android / PWA)"
+
+[[outputs]]
+id = "mp6JgGQOIobRvuvNLqGN6"
+uri = "file://artifacts/onul-letter/public/icons/android-foreground.png"
+type = "image"
+title = "Android Adaptive — Foreground"
+
+[[outputs]]
+id = "i9kx5IY4ZOeO_jIf_2_DY"
+uri = "file://artifacts/onul-letter/public/icons/android-background.png"
+type = "image"
+title = "Android Adaptive — Background"

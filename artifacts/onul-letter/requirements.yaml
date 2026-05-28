@@ -1,0 +1,16 @@
+packages:
+  "framer-motion": "For smooth, emotional page transitions and element reveals fitting the cozy aesthetic"
+  "date-fns": "For complex time-letter date calculations (last week, last month, last year)"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for safely merging Tailwind CSS classes"
+  "lucide-react": "For beautiful consistent iconography"
+
+images:
+  - path: "artifacts/onul-letter/public/images/cozy-bg.png"
+    description: "A very soft, blurry, pastel gradient background in warm peach, cream, and gentle lavender tones, dreamy and emotional cozy aesthetic, no harsh lines"
+    aspect_ratio: "9:16"
+
+notes:
+  - "App relies entirely on localStorage for persistence (no backend)."
+  - "Using date-fns for robust date manipulation to support the Time Letter feature."
+  - "Using framer-motion for soft, gentle micro-interactions."

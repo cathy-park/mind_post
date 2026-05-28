@@ -1,0 +1,10 @@
+node_modules
+.git
+.local
+.cache
+attached_assets
+.vercel
+dist
+.replit
+.agents
+.config

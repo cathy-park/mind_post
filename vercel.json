@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "artifacts/onul-letter/dist/public",
+  "buildCommand": "pnpm --filter @workspace/onul-letter run build",
+  "installCommand": "pnpm install",
+  "framework": null
+}

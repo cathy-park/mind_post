@@ -1,0 +1,35 @@
+modules = ["nodejs-24"]
+
+[[artifacts]]
+id = "artifacts/api-server"
+
+[[artifacts]]
+id = "artifacts/mockup-sandbox"
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+VITE_SUPABASE_URL = "https://nhtjguwzdugkyluqrcxi.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_kNWVB8bXXpmJMJVQQCZrUw_hpTQGLss"
+VAPID_PUBLIC_KEY = "BL6yBGKBS0d471T21g4GmRvr9OHqH6x6b7DxkY367QZ0OObgeISC57ZdbH8_IrBKt-NeMRpouGp9R-jEKQlm7go"
+VAPID_PRIVATE_KEY = "MTPnRJH7f2XNrVOdR_pHRc4UlDXQ3ukS8ubPG54Pv4w"
+VAPID_EMAIL = "mailto:admin@onulletter.app"
