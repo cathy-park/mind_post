@@ -110,6 +110,7 @@ export default function Record() {
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const today = new Date();
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
 
   const moaStep = !selectedEmotion ? 'idle'
     : shortAnswer.trim().length === 0 ? 'chosen'
@@ -137,7 +138,7 @@ export default function Record() {
     if (!builtinData) customEmotions.incrementUsage(selectedEmotion);
     try {
       await addEntry({
-        date: format(today, 'yyyy-MM-dd'),
+        date: format(selectedDate, 'yyyy-MM-dd'),
         emotion: selectedEmotion as EmotionType,
         question,
         shortAnswer: shortAnswer.trim(),
@@ -231,7 +232,24 @@ export default function Record() {
       <div className="flex flex-col h-full">
         <div className="flex-shrink-0 bg-background px-5 pt-10 pb-4 border-b border-border/20">
           <h1 className="text-2xl font-bold text-foreground">기록</h1>
-          <p className="text-sm text-muted-foreground mt-1">{format(today, 'yyyy년 M월 d일')}</p>
+          <div className="relative inline-block mt-1">
+            <span className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5 hover:text-foreground transition-colors">
+              {format(selectedDate, 'yyyy년 M월 d일')}
+              <Pencil className="w-3 h-3 text-muted-foreground" />
+            </span>
+            <input
+              type="date"
+              value={format(selectedDate, 'yyyy-MM-dd')}
+              onChange={e => {
+                if (e.target.value) {
+                  const [year, month, day] = e.target.value.split('-').map(Number);
+                  setSelectedDate(new Date(year, month - 1, day));
+                }
+              }}
+              max={format(today, 'yyyy-MM-dd')}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-5 space-y-6"
