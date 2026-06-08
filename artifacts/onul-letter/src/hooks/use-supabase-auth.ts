@@ -145,8 +145,8 @@ export function useSupabaseAuth(): AuthState {
       });
 
       let isAwake = false;
-      // 최대 30번 시도 (약 1분 30초)
-      for (let i = 0; i < 30; i++) {
+      // 최대 60번 시도 (약 3분)
+      for (let i = 0; i < 60; i++) {
         try {
           const resp = await fetch(`${supabaseUrl}/auth/v1/health`, {
             headers: { 'apikey': supabaseAnonKey },
