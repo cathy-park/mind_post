@@ -396,7 +396,14 @@ export function useAddEntry() {
       if (error) throw new Error(error.message);
       return dbToEntry(data as DbEntry);
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (newEntry) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? [newEntry, ...old] : [newEntry];
+        saveEntriesToCache(newEntries, 'current_user'); // ID doesn't matter much for immediate cache read
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -426,7 +433,14 @@ export function useUpdateEntry() {
       if (error) throw new Error(error.message);
       return dbToEntry(data as DbEntry);
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (updatedEntry) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? old.map(e => e.id === updatedEntry.id ? updatedEntry : e) : [updatedEntry];
+        saveEntriesToCache(newEntries, 'current_user');
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -445,7 +459,14 @@ export function useDeleteEntry() {
       if (error) throw new Error(error.message);
       return id;
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (deletedId) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? old.filter(e => e.id !== deletedId) : [];
+        saveEntriesToCache(newEntries, 'current_user');
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -474,7 +495,14 @@ export function useAddReflection() {
       if (error) throw new Error(error.message);
       return dbToEntry(data as DbEntry);
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (updatedEntry) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? old.map(e => e.id === updatedEntry.id ? updatedEntry : e) : [updatedEntry];
+        saveEntriesToCache(newEntries, 'current_user');
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -504,7 +532,14 @@ export function useUpdateReflection() {
       if (error) throw new Error(error.message);
       return dbToEntry(data as DbEntry);
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (updatedEntry) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? old.map(e => e.id === updatedEntry.id ? updatedEntry : e) : [updatedEntry];
+        saveEntriesToCache(newEntries, 'current_user');
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
@@ -532,7 +567,14 @@ export function useDeleteReflection() {
       if (error) throw new Error(error.message);
       return dbToEntry(data as DbEntry);
     },
-    onSuccess: () => invalidateAll(queryClient),
+    onSuccess: (updatedEntry) => {
+      queryClient.setQueryData(['entries'], (old: JournalEntry[] | undefined) => {
+        const newEntries = old ? old.map(e => e.id === updatedEntry.id ? updatedEntry : e) : [updatedEntry];
+        saveEntriesToCache(newEntries, 'current_user');
+        return newEntries;
+      });
+      invalidateAll(queryClient);
+    },
   });
 }
 
