@@ -132,22 +132,58 @@ export function useSupabaseAuth(): AuthState {
   }, []);
 
   const login = useCallback(async () => {
+    setIsLoggingIn(true);
+    
+    // 521 에러 방지: 서버가 깨어날 때까지 대기
     try {
-      setIsLoggingIn(true);
-      const redirectTo = getRedirectUrl();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      
+      toast({
+        title: '로그인 준비 중...',
+        description: '서버 연결을 확인하고 있습니다. (최대 1~2분 소요)',
+      });
+
+      let isAwake = false;
+      // 최대 30번 시도 (약 1분 30초)
+      for (let i = 0; i < 30; i++) {
+        try {
+          const resp = await fetch(`${supabaseUrl}/auth/v1/health`, {
+            headers: { 'apikey': supabaseAnonKey },
+            // 2초 타임아웃
+            signal: AbortSignal.timeout(2000),
+          });
+          if (resp.ok || resp.status === 400 || resp.status === 401 || resp.status === 403) {
+            isAwake = true;
+            break;
+          }
+        } catch (e) {
+          // ignore timeout or network error
+        }
+        // 3초 대기 후 재시도
+        await new Promise(r => setTimeout(r, 3000));
+      }
+
+      if (!isAwake) {
+        throw new Error('서버가 응답하지 않습니다.');
+      }
+
+      const redirectUrl = getRedirectUrl();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo,
-          queryParams: { prompt: 'select_account' }
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) throw error;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
       toast({
         title: '로그인 실패',
-        description: err.message || '구글 로그인 중 문제가 발생했습니다.',
+        description: '서버를 깨우는 데 실패했습니다. 잠시 후 다시 시도해 주세요.',
         variant: 'destructive',
       });
       setIsLoggingIn(false);
