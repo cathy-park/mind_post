@@ -16,8 +16,8 @@ interface AuthState {
   nickname: string;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  updateNickname: (nickname: string) => Promise<void>;
   isSyncing: boolean;
-  isLoggingIn: boolean;
 }
 
 async function syncGuestEntries(userId: string): Promise<void> {
@@ -55,6 +55,7 @@ async function syncGuestEntries(userId: string): Promise<void> {
     }
     clearGuestEntries();
     updateToast({
+      id: toastId,
       title: '동기화 완료!',
       description: `${guests.length}개의 기록이 안전하게 보관되었습니다 💌`,
     });
@@ -62,6 +63,7 @@ async function syncGuestEntries(userId: string): Promise<void> {
   } catch (err) {
     console.error('Guest sync failed:', err);
     updateToast({
+      id: toastId,
       title: '동기화 실패',
       description: '기록을 동기화하는 중 문제가 발생했습니다. 다시 시도해 주세요.',
       variant: 'destructive',
@@ -70,8 +72,6 @@ async function syncGuestEntries(userId: string): Promise<void> {
 }
 
 function getRedirectUrl(): string {
-  const explicit = import.meta.env.VITE_APP_URL as string | undefined;
-  if (explicit) return explicit.replace(/\/$/, '') + '/';
   const domain = typeof __REPLIT_DOMAIN__ !== 'undefined' ? __REPLIT_DOMAIN__ : '';
   if (domain) return `https://${domain}/`;
   return window.location.origin + '/';
@@ -104,20 +104,21 @@ export function useSupabaseAuth(): AuthState {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
+        
         setUser(session?.user ?? null);
         setIsLoading(false);
-        clearTimeout(timeoutId);
 
         if (event === 'SIGNED_IN' && session?.user) {
           setIsSyncing(true);
           syncGuestEntries(session.user.id).finally(() => {
-            setIsSyncing(false);
+            if (isMounted) setIsSyncing(false);
           });
           queryClient.invalidateQueries({ queryKey: ['entries'] });
         }
 
         if (event === 'SIGNED_OUT') {
           clearEntriesCache();
+          queryClient.invalidateQueries({ queryKey: ['entries'] });
           queryClient.clear();
         }
       }
@@ -131,27 +132,11 @@ export function useSupabaseAuth(): AuthState {
   }, []);
 
   const login = useCallback(async () => {
-    try {
-      const redirectUrl = getRedirectUrl();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            prompt: 'select_account',
-          },
-        },
-      });
-
-      if (error) throw error;
-    } catch (err) {
-      console.error('Login error:', err);
-      toast({
-        title: '로그인 실패',
-        description: '구글 로그인 페이지로 이동하는 데 실패했습니다.',
-        variant: 'destructive',
-      });
-    }
+    const redirectTo = getRedirectUrl();
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -165,10 +150,8 @@ export function useSupabaseAuth(): AuthState {
     if (data.user) setUser(data.user);
   }, []);
 
+
   const nickname = user?.user_metadata?.nickname || '기록자';
 
-  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout,
-    updateNickname,
-    isSyncing,
-  };
+  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout, updateNickname, isSyncing };
 }
