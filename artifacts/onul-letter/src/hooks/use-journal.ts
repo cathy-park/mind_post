@@ -160,10 +160,9 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
     // fetch 실패 → 게스트 항목 반환
   }
 
-  // 토큰 만료 / 비로그인 → 캐시 즉시 반환, TOKEN_REFRESHED로 갱신
+  // 토큰 만료 / 비로그인 → 캐시 있으면 반환 (TOKEN_REFRESHED로 갱신)
   const cached = loadEntriesFromCache();
   if (cached?.entries) return cached.entries;
-  return [];
   
   // 캐시 없음 + 토큰 만료 → Supabase 초기화 완료까지 대기
   const { data: { session } } = await supabase.auth.getSession();
