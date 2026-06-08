@@ -73,7 +73,7 @@ function SettingRow({
 
 // ── Auth card — top of settings ────────────────────────────────────────────────
 function AuthCard() {
-  const { isAuthenticated, isLoading, user, nickname, login, logout, updateNickname } = useSupabaseAuth();
+  const { isAuthenticated, isLoading, user, nickname, login, logout, updateNickname, isLoggingIn } = useSupabaseAuth();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
