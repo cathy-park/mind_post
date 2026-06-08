@@ -84,18 +84,30 @@ export function useSupabaseAuth(): AuthState {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    // 안전 장치: 3초 이상 걸리면 무조건 로딩 해제 (서버가 깨어나는 중일 때 무한 로딩 방지)
+    const timeoutId = setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 3000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       setUser(session?.user ?? null);
       setIsLoading(false);
+      clearTimeout(timeoutId);
     }).catch((err) => {
       console.error('Session error:', err);
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
+      clearTimeout(timeoutId);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return;
         setUser(session?.user ?? null);
         setIsLoading(false);
+        clearTimeout(timeoutId);
 
         if (event === 'SIGNED_IN' && session?.user) {
           setIsSyncing(true);
@@ -107,12 +119,16 @@ export function useSupabaseAuth(): AuthState {
 
         if (event === 'SIGNED_OUT') {
           clearEntriesCache();
-          queryClient.invalidateQueries({ queryKey: ['entries'] });
+          queryClient.clear();
         }
-      },
+      }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = useCallback(async () => {
