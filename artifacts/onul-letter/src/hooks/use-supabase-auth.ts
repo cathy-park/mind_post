@@ -87,6 +87,9 @@ export function useSupabaseAuth(): AuthState {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setIsLoading(false);
+    }).catch((err) => {
+      console.error('Session error:', err);
+      setIsLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

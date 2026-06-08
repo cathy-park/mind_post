@@ -18,7 +18,7 @@ type Tab = 'list' | 'insights';
 
 export default function Archive() {
   const { data: entries = [] } = useEntries();
-  const { nickname } = useSupabaseAuth();
+  const { nickname, isAuthenticated } = useSupabaseAuth();
   const [, setLocation] = useLocation();
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [tab, setTab] = useState<Tab>('list');
@@ -215,7 +215,20 @@ export default function Archive() {
                     ) : (
                       <>
                         <p className="font-bold text-foreground">아직 보관된 기억이 없어요</p>
-                        <p className="text-muted-foreground text-sm">첫 번째 마음을 남겨볼까요?</p>
+                        <p className="text-muted-foreground text-sm mb-4">첫 번째 마음을 남기거나 로그인해서 기록을 불러오세요.</p>
+                        
+                        {!isAuthenticated && (
+                          <button
+                            onClick={() => {
+                              const btn = document.querySelector('[href="/settings"]') as HTMLAnchorElement;
+                              if (btn) btn.click();
+                            }}
+                            className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all"
+                          >
+                            로그인하러 가기
+                          </button>
+                        )}
+
                         <motion.button
                           whileTap={{ scale: 0.97 }}
                           onClick={() => setLocation('/record')}
