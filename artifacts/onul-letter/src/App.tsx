@@ -62,9 +62,9 @@ function Router() {
     <>
       <GuestNavigator />
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={Archive} />
+        <Route path="/home" component={Home} />
         <Route path="/record" component={Record} />
-        <Route path="/archive" component={Archive} />
         <Route path="/time-letter" component={TimeLetter} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/settings" component={Settings} />
