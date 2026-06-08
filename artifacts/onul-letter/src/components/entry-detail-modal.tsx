@@ -22,6 +22,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
   const [entry, setEntry] = useState(initialEntry);
 
   // Edit fields
+  const [date, setDate] = useState(initialEntry.date);
   const [emotion, setEmotion] = useState<EmotionType>(initialEntry.emotion);
   const [shortAnswer, setShortAnswer] = useState(initialEntry.shortAnswer);
   const [longAnswer, setLongAnswer] = useState(initialEntry.longAnswer ?? '');
@@ -55,6 +56,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
     if (!isAuthenticated) { toast({ title: '로그인이 필요해요', description: '기록을 수정하려면 로그인이 필요해요' }); await login(); return; }
     const updated = await updateEntry({
       ...entry,
+      date,
       emotion,
       question: resolveEmotion(emotion).question || entry.question,
       shortAnswer: shortAnswer.trim(),
@@ -321,6 +323,17 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
             {/* EDIT */}
             {screen === 'edit' && (
               <motion.div key="edit" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-5">
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">날짜 선택</p>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                    className="w-full bg-card border border-card-border rounded-2xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">감정 선택</p>
                   <div className="grid grid-cols-3 gap-2">

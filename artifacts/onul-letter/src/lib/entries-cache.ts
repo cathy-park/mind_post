@@ -14,14 +14,14 @@ export function saveEntriesToCache(entries: JournalEntry[], userId: string): voi
   }
 }
 
-export function loadEntriesFromCache(): JournalEntry[] | null {
+export function loadEntriesFromCache(): { entries: JournalEntry[], savedAt: number } | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { entries, savedAt } = JSON.parse(raw);
     if (!Array.isArray(entries) || entries.length === 0) return null;
     if (Date.now() - savedAt > MAX_AGE_MS) return null;
-    return entries as JournalEntry[];
+    return { entries: entries as JournalEntry[], savedAt };
   } catch {
     return null;
   }

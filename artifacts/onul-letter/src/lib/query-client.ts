@@ -14,5 +14,5 @@ export const queryClient = new QueryClient({
 // → 인증 완료 전에도 홈/편지함에 즉시 데이터 표시
 const cached = loadEntriesFromCache();
 if (cached) {
-  queryClient.setQueryData(['entries'], cached);
+  queryClient.setQueryData(['entries'], cached.entries, { updatedAt: cached.savedAt });
 }

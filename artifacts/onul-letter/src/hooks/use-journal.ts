@@ -149,10 +149,10 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
 
   if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
     const cached = loadEntriesFromCache();
-    if (cached) {
+    if (cached?.entries) {
       // 캐시 있음 → 즉시 표시 + 백그라운드 갱신
       triggerBackgroundFetch(stored.access_token, stored.user.id);
-      return cached;
+      return cached.entries;
     }
     // 캐시 없음(첫 방문 기기) → 직접 fetch 대기 (약 300~800ms)
     const direct = await fetchDirect(stored.access_token, stored.user.id);
@@ -162,8 +162,9 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
 
   // 토큰 만료 / 비로그인 → 캐시 즉시 반환, TOKEN_REFRESHED로 갱신
   const cached = loadEntriesFromCache();
-  if (cached) return cached;
-
+  if (cached?.entries) return cached.entries;
+  return [];
+  
   // 캐시 없음 + 토큰 만료 → Supabase 초기화 완료까지 대기
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) {
@@ -416,6 +417,7 @@ export function useUpdateEntry() {
           short_answer: updated.shortAnswer,
           long_answer: updated.longAnswer ?? null,
           photo_url: photoUrl,
+          entry_date: updated.date,
           updated_at: new Date().toISOString(),
         })
         .eq('id', updated.id)
