@@ -4,7 +4,8 @@ import { loadEntriesFromCache } from './entries-cache';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      staleTime: 30_000,
     },
   },
 });

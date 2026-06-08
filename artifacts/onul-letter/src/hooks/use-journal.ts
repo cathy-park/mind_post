@@ -109,11 +109,14 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
     const resp = await fetch(url, {
       headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(8000),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) return null;
     const data: DbEntry[] = await resp.json();
     const entries = data.map(dbToEntry);
