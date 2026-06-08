@@ -110,7 +110,7 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s for cold start
     const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
     const resp = await fetch(url, {
       headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
@@ -127,6 +127,8 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
   }
 }
 
+import { queryClient } from '@/lib/query-client';
+
 // 캐시가 있을 때 백그라운드로 최신 데이터 갱신 (UI는 즉시 표시)
 let _bgFetching = false;
 async function triggerBackgroundFetch(accessToken: string, userId: string) {
@@ -135,9 +137,10 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
   try {
     const entries = await fetchDirect(accessToken, userId);
     if (entries !== null) {
-      const { queryClient } = await import('@/lib/query-client');
       queryClient.setQueryData(['entries'], entries);
     }
+  } catch (err) {
+    console.error('Background fetch error:', err);
   } finally {
     _bgFetching = false;
   }
