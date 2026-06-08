@@ -96,7 +96,17 @@ function AuthCard() {
     setEditing(false);
   };
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="surface-card overflow-hidden p-5 flex items-center gap-3">
+        <div className="w-11 h-11 rounded-full bg-muted animate-pulse flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
+          <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
+        </div>
+      </motion.div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
