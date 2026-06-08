@@ -16,8 +16,8 @@ interface AuthState {
   nickname: string;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  updateNickname: (nickname: string) => Promise<void>;
   isSyncing: boolean;
+  isLoggingIn: boolean;
 }
 
 async function syncGuestEntries(userId: string): Promise<void> {
@@ -81,6 +81,7 @@ export function useSupabaseAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -112,11 +113,26 @@ export function useSupabaseAuth(): AuthState {
   }, []);
 
   const login = useCallback(async () => {
-    const redirectTo = getRedirectUrl();
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
+    try {
+      setIsLoggingIn(true);
+      const redirectTo = getRedirectUrl();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { prompt: 'select_account' }
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Login error:', err);
+      toast({
+        title: '로그인 실패',
+        description: err.message || '구글 로그인 중 문제가 발생했습니다.',
+        variant: 'destructive',
+      });
+      setIsLoggingIn(false);
+    }
   }, []);
 
   const logout = useCallback(async () => {
@@ -132,5 +148,9 @@ export function useSupabaseAuth(): AuthState {
 
   const nickname = user?.user_metadata?.nickname || '기록자';
 
-  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout, updateNickname, isSyncing };
+  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout,
+    updateNickname,
+    isSyncing,
+    isLoggingIn,
+  };
 }
