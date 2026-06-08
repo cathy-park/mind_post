@@ -43,7 +43,7 @@ async function syncGuestEntries(userId: string): Promise<void> {
       if (g.photo) {
         photoUrl = await uploadPhoto(g.photo, userId, g.date);
       }
-      await supabase.from('entries').insert({
+      const { error } = await supabase.from('entries').insert({
         user_id: userId,
         entry_date: g.date,
         emotion: g.emotion,
@@ -51,6 +51,7 @@ async function syncGuestEntries(userId: string): Promise<void> {
         long_answer: g.longAnswer ?? null,
         photo_url: photoUrl,
       });
+      if (error) throw error;
     }
     clearGuestEntries();
     updateToast({
