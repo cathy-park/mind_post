@@ -18,6 +18,7 @@ interface AuthState {
   logout: () => Promise<void>;
   updateNickname: (nickname: string) => Promise<void>;
   isSyncing: boolean;
+  isLoggingIn: boolean;
 }
 
 async function syncGuestEntries(userId: string): Promise<void> {
@@ -131,13 +132,65 @@ export function useSupabaseAuth(): AuthState {
     };
   }, []);
 
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
   const login = useCallback(async () => {
-    const redirectTo = getRedirectUrl();
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
-  }, []);
+    if (isLoggingIn) return;
+    
+    setIsLoggingIn(true);
+    let isAwake = false;
+    
+    // 3초 이상 걸리면 안내 토스트 띄우기
+    const timeoutId = setTimeout(() => {
+      if (!isAwake) {
+        toast({
+          title: '서버를 깨우는 중...',
+          description: '오랜만에 접속하여 데이터베이스를 깨우고 있습니다. 최대 1~2분이 소요될 수 있습니다 💤',
+          duration: 120000, // 2분
+        });
+      }
+    }, 3000);
+
+    try {
+      // DB가 깨어날 때까지 대기 (최대 반복)
+      for (let i = 0; i < 10; i++) {
+        const { error } = await supabase.from('entries').select('id').limit(1);
+        
+        // 에러가 없거나, 5xx 에러(서버 준비 중)가 아니면 깨어난 것으로 간주
+        const isServerStarting = error && (
+          error.code === '504' || 
+          error.code === '503' || 
+          error.code === '502' || 
+          error.message?.includes('timeout') ||
+          error.message?.includes('Failed to fetch')
+        );
+
+        if (!isServerStarting) {
+          isAwake = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+      
+      clearTimeout(timeoutId);
+      const redirectTo = getRedirectUrl();
+      
+      // DB가 깨어난 것이 확인된 후 OAuth 리다이렉트 실행 (504 에러 방지)
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      toast({
+        title: '로그인 실패',
+        description: '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+        variant: 'destructive',
+      });
+      setIsLoggingIn(false);
+      clearTimeout(timeoutId);
+    }
+  }, [isLoggingIn]);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -153,5 +206,5 @@ export function useSupabaseAuth(): AuthState {
 
   const nickname = user?.user_metadata?.nickname || '기록자';
 
-  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout, updateNickname, isSyncing };
+  return { user, isLoading, isAuthenticated: !!user, nickname, login, logout, updateNickname, isSyncing, isLoggingIn };
 }
