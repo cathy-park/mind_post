@@ -104,25 +104,23 @@ function getStoredSupabaseSession(): {
   return null;
 }
 
-// Supabase REST API 직접 호출 (JS 클라이언트 초기화 대기 없음)
-async function fetchDirect(accessToken: string, userId: string): Promise<JournalEntry[] | null> {
+// Supabase 클라이언트를 통해 데이터 fetch (CORS 안전, 브라우저 환경 권장)
+async function fetchDirect(_accessToken: string, userId: string): Promise<JournalEntry[] | null> {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s for cold start
-    const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
-    const resp = await fetch(url, {
-      headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (!resp.ok) return null;
-    const data: DbEntry[] = await resp.json();
-    const entries = data.map(dbToEntry);
+    const { data, error } = await supabase
+      .from('entries')
+      .select('*, reflection_comments(*)')
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Supabase fetch error:', error.message);
+      return null;
+    }
+    const entries = (data as DbEntry[]).map(dbToEntry);
     saveEntriesToCache(entries, userId);
     return entries;
-  } catch {
+  } catch (e) {
+    console.error('fetchDirect error:', e);
     return null;
   }
 }
