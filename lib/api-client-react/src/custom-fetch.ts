@@ -1,5 +1,10 @@
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
+  /**
+   * Maximum time in milliseconds to wait for the request before aborting.
+   * Defaults to 30000 ms (30 seconds) if not specified.
+   */
+  timeout?: number;
 };
 
 export type ErrorType<T = unknown> = ApiError<T>;
@@ -317,14 +322,14 @@ async function parseSuccessBody(
       }
       return response.blob();
   }
-}
+} 
 
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
-  options: CustomFetchOptions = {},
+  options: CustomFetchOptions = {}
 ): Promise<T> {
   input = applyBaseUrl(input);
-  const { responseType = "auto", headers: headersInit, ...init } = options;
+  const { responseType = "auto", headers: headersInit, timeout = 30000, ...init } = options;
 
   const method = resolveMethod(input, init.method);
 
@@ -346,8 +351,6 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  // Attach bearer token when an auth getter is configured and no
-  // Authorization header has been explicitly provided.
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
     if (token) {
@@ -357,7 +360,22 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  if (timeout != null) {
+    timeoutId = setTimeout(() => controller.abort(), timeout);
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    method,
+    headers,
+    signal: controller.signal,
+  });
+
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
@@ -366,3 +384,6 @@ export async function customFetch<T = unknown>(
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;
 }
+
+
+
