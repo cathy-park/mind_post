@@ -17,7 +17,7 @@ import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
 type Tab = 'list' | 'insights';
 
 export default function Archive() {
-  const { data: entries = [], isLoading, isFetching } = useEntries();
+  const { data: entries = [], isLoading, isFetching, isError, error } = useEntries();
   const { nickname, isAuthenticated } = useSupabaseAuth();
   const [, setLocation] = useLocation();
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
@@ -201,6 +201,14 @@ export default function Archive() {
                   <div className="flex flex-col items-center justify-center py-16 space-y-4">
                     <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
                     <p className="text-muted-foreground font-medium animate-pulse">기록을 불러오는 중...</p>
+                  </div>
+                ) : isError ? (
+                  <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+                    <p className="text-red-400 font-bold">데이터를 불러오는 데 실패했습니다.</p>
+                    <p className="text-xs text-muted-foreground break-all px-4">{error?.message}</p>
+                    <button onClick={() => window.location.reload()} className="px-5 py-2 mt-2 bg-red-100 dark:bg-red-900/20 text-red-500 rounded-full text-sm font-bold active:scale-95 transition-transform">
+                      다시 시도하기
+                    </button>
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">

@@ -113,7 +113,11 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
     const resp = await fetch(url, {
       headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error('fetchDirect server error:', resp.status, errText);
+      return null;
+    }
     const data: DbEntry[] = await resp.json();
     const entries = data.map(dbToEntry);
     if (entries.length > 0) {
