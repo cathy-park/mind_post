@@ -104,20 +104,21 @@ function getStoredSupabaseSession(): {
   return null;
 }
 
-// Supabase 클라이언트를 통해 데이터 fetch (CORS 안전, 브라우저 환경 권장)
-async function fetchDirect(_accessToken: string, userId: string): Promise<JournalEntry[] | null> {
+// Supabase REST API 직접 호출 (JS 클라이언트 초기화 대기 및 race condition 방지)
+async function fetchDirect(accessToken: string, userId: string): Promise<JournalEntry[] | null> {
   try {
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*, reflection_comments(*)')
-      .order('entry_date', { ascending: false })
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('Supabase fetch error:', error.message);
-      return null;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
+    const resp = await fetch(url, {
+      headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
+    });
+    if (!resp.ok) return null;
+    const data: DbEntry[] = await resp.json();
+    const entries = data.map(dbToEntry);
+    if (entries.length > 0) {
+      saveEntriesToCache(entries, userId);
     }
-    const entries = (data as DbEntry[]).map(dbToEntry);
-    saveEntriesToCache(entries, userId);
     return entries;
   } catch (e) {
     console.error('fetchDirect error:', e);
@@ -169,23 +170,21 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  // 3️⃣ Supabase 데이터 조회
-  console.log('[fetchAllEntries] Supabase 조회 실행');
-  const { data, error } = await supabase
-    .from('entries')
-    .select('*, reflection_comments(*)')
-    .order('entry_date', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('[fetchAllEntries] Supabase fetch error:', error);
-    if (error.code === 'PGRST116' || error.message.includes('JWT')) return [];
-    throw new Error(error.message);
+  // 3️⃣ Supabase 데이터 조회 (fetch 직접 호출로 토큰 확실히 적용)
+  console.log('[fetchAllEntries] Supabase fetchDirect 조회 실행');
+  const entries = await fetchDirect(session.access_token, session.user.id);
+  
+  if (entries === null) {
+    // 에러 발생 시 빈 배열 반환 (UI에서 로딩 끝나고 빈 화면으로 넘어가는 걸 막으려면 throw 하는 게 좋음)
+    throw new Error('Failed to fetch entries from Supabase');
   }
 
-  const entries = (data as DbEntry[]).map(dbToEntry);
   console.log('[fetchAllEntries] 조회 완료, 건수', entries.length);
-  saveEntriesToCache(entries, session.user.id);
+  if (entries.length > 0) {
+    saveEntriesToCache(entries, session.user.id);
+  } else {
+    clearEntriesCache(); // 빈 배열일 경우 잘못된 캐싱을 막기 위해 로컬 캐시 삭제
+  }
   return entries;
 }
 
