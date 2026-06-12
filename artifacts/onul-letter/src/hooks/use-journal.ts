@@ -148,33 +148,27 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
 
 async function fetchAllEntries(): Promise<JournalEntry[]> {
   // ── 1단계: 캐시 즉시 반환 (가장 빠른 경로) ──
-  // 캐시가 있으면 무조건 즉시 반환하고 백그라운드에서 최신 데이터를 가져옴
   const cached = loadEntriesFromCache();
   const stored = getStoredSupabaseSession();
   const nowSecs = Math.floor(Date.now() / 1000);
 
   if (cached?.entries && cached.entries.length > 0) {
-    // 유효한 토큰이 있으면 백그라운드 갱신 시작
+    // 캐시가 있으면 즉시 반환하고 백그라운드에서 최신 데이터 갱신
     if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
       triggerBackgroundFetch(stored.access_token, stored.user.id);
     }
     return cached.entries;
   }
 
-  // ── 2단계: 캐시 없음 + 유효한 토큰 → 직접 REST fetch (Supabase 클라이언트 초기화 불필요) ──
+  // ── 2단계: 캐시 없음 + 유효한 토큰 → 직접 REST fetch ──
   if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
     const direct = await fetchDirect(stored.access_token, stored.user.id);
     if (direct !== null) return direct;
   }
 
-  // ── 3단계: 토큰 만료 / 비로그인 → Supabase 클라이언트로 fallback ──
-  // getSession()은 토큰 갱신 시 느릴 수 있으므로 race로 제한
-  const sessionPromise = supabase.auth.getSession();
-  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-  const sessionResult = await Promise.race([sessionPromise, timeoutPromise]);
-
-  const session = sessionResult && 'data' in sessionResult ? sessionResult.data.session : null;
-
+  // ── 3단계: 캐시 없음 + 토큰 만료/비로그인 → Supabase 클라이언트로 fallback ──
+  // 캐시가 없는 경우에는 getSession() 완료까지 반드시 대기해야 함
+  const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) {
     return getGuestEntries()
       .map(guestToJournalEntry)
