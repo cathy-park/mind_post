@@ -17,7 +17,7 @@ import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
 type Tab = 'list' | 'insights';
 
 export default function Archive() {
-  const { data: entries = [], isLoading } = useEntries();
+  const { data: entries = [], isLoading, isFetching } = useEntries();
   const { nickname, isAuthenticated } = useSupabaseAuth();
   const [, setLocation] = useLocation();
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
@@ -197,7 +197,7 @@ export default function Archive() {
             {tab === 'list' && (
               <motion.div key="list" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
 
-                {isLoading ? (
+                {(isLoading || (isFetching && entries.length === 0)) ? (
                   <div className="flex flex-col items-center justify-center py-16 space-y-4">
                     <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
                     <p className="text-muted-foreground font-medium animate-pulse">기록을 불러오는 중...</p>
