@@ -147,27 +147,32 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
 }
 
 async function fetchAllEntries(): Promise<JournalEntry[]> {
+  console.log('[fetchAllEntries] 시작');
   // 1️⃣ 캐시가 있으면 즉시 반환하고 백그라운드 갱신 시도
   const cached = loadEntriesFromCache();
   if (cached?.entries && cached.entries.length > 0) {
+    console.log('[fetchAllEntries] 캐시 히트', { count: cached.entries.length });
     const stored = getStoredSupabaseSession();
     const nowSecs = Math.floor(Date.now() / 1000);
     if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
+      console.log('[fetchAllEntries] 백그라운드 갱신 트리거', { userId: stored.user.id });
       triggerBackgroundFetch(stored.access_token, stored.user.id);
     }
     return cached.entries;
   }
 
-  // 2️⃣ 세션 확보 (supabase client)
-  const { data: { session } } = await supabase.auth.getSession();
+  // 2️⃣ 세션 확보
+  console.log('[fetchAllEntries] 세션 확보 시도');
+  const { data: { session } = { session: null } } = await supabase.auth.getSession();
   if (!session?.user) {
-    // 비회원 경우
+    console.log('[fetchAllEntries] 비회원 처리');
     return getGuestEntries()
       .map(guestToJournalEntry)
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  // 3️⃣ 데이터 조회
+  // 3️⃣ Supabase 데이터 조회
+  console.log('[fetchAllEntries] Supabase 조회 실행');
   const { data, error } = await supabase
     .from('entries')
     .select('*, reflection_comments(*)')
@@ -175,12 +180,13 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Supabase fetch error:', error);
+    console.error('[fetchAllEntries] Supabase fetch error:', error);
     if (error.code === 'PGRST116' || error.message.includes('JWT')) return [];
     throw new Error(error.message);
   }
 
   const entries = (data as DbEntry[]).map(dbToEntry);
+  console.log('[fetchAllEntries] 조회 완료, 건수', entries.length);
   saveEntriesToCache(entries, session.user.id);
   return entries;
 }
