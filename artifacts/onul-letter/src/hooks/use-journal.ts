@@ -147,34 +147,27 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
 }
 
 async function fetchAllEntries(): Promise<JournalEntry[]> {
-  // ── 1단계: 캐시 즉시 반환 (가장 빠른 경로) ──
+  // 1️⃣ 캐시가 있으면 즉시 반환하고 백그라운드 갱신 시도
   const cached = loadEntriesFromCache();
-  const stored = getStoredSupabaseSession();
-  const nowSecs = Math.floor(Date.now() / 1000);
-
   if (cached?.entries && cached.entries.length > 0) {
-    // 캐시가 있으면 즉시 반환하고 백그라운드에서 최신 데이터 갱신
+    const stored = getStoredSupabaseSession();
+    const nowSecs = Math.floor(Date.now() / 1000);
     if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
       triggerBackgroundFetch(stored.access_token, stored.user.id);
     }
     return cached.entries;
   }
 
-  // ── 2단계: 캐시 없음 + 유효한 토큰 → 직접 REST fetch ──
-  if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
-    const direct = await fetchDirect(stored.access_token, stored.user.id);
-    if (direct !== null) return direct;
-  }
-
-  // ── 3단계: 캐시 없음 + 토큰 만료/비로그인 → Supabase 클라이언트로 fallback ──
-  // 캐시가 없는 경우에는 getSession() 완료까지 반드시 대기해야 함
+  // 2️⃣ 세션 확보 (supabase client)
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) {
+    // 비회원 경우
     return getGuestEntries()
       .map(guestToJournalEntry)
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  // 3️⃣ 데이터 조회
   const { data, error } = await supabase
     .from('entries')
     .select('*, reflection_comments(*)')
@@ -182,6 +175,7 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('Supabase fetch error:', error);
     if (error.code === 'PGRST116' || error.message.includes('JWT')) return [];
     throw new Error(error.message);
   }

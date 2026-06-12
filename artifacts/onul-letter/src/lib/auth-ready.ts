@@ -12,17 +12,8 @@ import { queryClient } from '@/lib/query-client';
 
 supabase.auth.onAuthStateChange((event) => {
   if (event === 'TOKEN_REFRESHED') {
-    // 토큰 갱신 완료 → 항상 최신 데이터 재조회 (만료 후 복귀 시 필수)
     queryClient.invalidateQueries({ queryKey: ['entries'] });
   } else if (event === 'INITIAL_SESSION') {
-    // 초기화 완료 → 이미 실제 데이터가 로드되어 있으면 중복 조회 생략
-    const state = queryClient.getQueryState(['entries']);
-    const currentData = queryClient.getQueryData<unknown[]>(['entries']);
-    const hasRealData = Array.isArray(currentData) && currentData.length > 0;
-    const age = state?.dataUpdatedAt ? Date.now() - state.dataUpdatedAt : Infinity;
-    // 실제 데이터가 있고 10초 이내에 갱신된 경우에만 생략
-    if (!(hasRealData && age < 10_000)) {
-      queryClient.invalidateQueries({ queryKey: ['entries'] });
-    }
+    queryClient.invalidateQueries({ queryKey: ['entries'] });
   }
 });
