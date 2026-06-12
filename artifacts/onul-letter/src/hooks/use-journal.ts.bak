@@ -1,3 +1,4 @@
+// Backup of use-journal.ts after fixing fetchAllEntries
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, subDays, subMonths, subYears, parseISO } from 'date-fns';
 import { JournalEntry, AppSettings, DEFAULT_SETTINGS, WEEKDAYS, EmotionType, Reflection } from '@/lib/constants';
@@ -147,34 +148,32 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
 }
 
 async function fetchAllEntries(): Promise<JournalEntry[]> {
-  const stored = getStoredSupabaseSession();
-  const nowSecs = Math.floor(Date.now() / 1000);
-
-  if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
-    const cached = loadEntriesFromCache();
-    if (cached?.entries) {
-      // 캐시 있음 → 즉시 표시 + 백그라운드 갱신
+  console.log('[fetchAllEntries] 시작');
+  // 1️⃣ 캐시가 있으면 즉시 반환하고 백그라운드 갱신 시도
+  const cached = loadEntriesFromCache();
+  if (cached?.entries && cached.entries.length > 0) {
+    console.log('[fetchAllEntries] 캐시 히트', { count: cached.entries.length });
+    const stored = getStoredSupabaseSession();
+    const nowSecs = Math.floor(Date.now() / 1000);
+    if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
+      console.log('[fetchAllEntries] 백그라운드 갱신 트리거', { userId: stored.user.id });
       triggerBackgroundFetch(stored.access_token, stored.user.id);
-      return cached.entries;
     }
-    // 캐시 없음(첫 방문 기기) → 직접 fetch 대기 (약 300~800ms)
-    const direct = await fetchDirect(stored.access_token, stored.user.id);
-    if (direct !== null) return direct;
-    // fetch 실패 → 게스트 항목 반환
+    return cached.entries;
   }
 
-  // 토큰 만료 / 비로그인 → 캐시 있으면 반환 (TOKEN_REFRESHED로 갱신)
-  const cached = loadEntriesFromCache();
-  if (cached?.entries) return cached.entries;
-  
-  // 캐시 없음 + 토큰 만료 → Supabase 초기화 완료까지 대기
-  const { data: { session } } = await supabase.auth.getSession();
+  // 2️⃣ 세션 확보
+  console.log('[fetchAllEntries] 세션 확보 시도');
+  const { data: { session } = { session: null } } = await supabase.auth.getSession();
   if (!session?.user) {
+    console.log('[fetchAllEntries] 비회원 처리');
     return getGuestEntries()
       .map(guestToJournalEntry)
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  // 3️⃣ Supabase 데이터 조회
+  console.log('[fetchAllEntries] Supabase 조회 실행');
   const { data, error } = await supabase
     .from('entries')
     .select('*, reflection_comments(*)')
@@ -182,11 +181,13 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('[fetchAllEntries] Supabase fetch error:', error);
     if (error.code === 'PGRST116' || error.message.includes('JWT')) return [];
     throw new Error(error.message);
   }
 
   const entries = (data as DbEntry[]).map(dbToEntry);
+  console.log('[fetchAllEntries] 조회 완료, 건수', entries.length);
   saveEntriesToCache(entries, session.user.id);
   return entries;
 }
@@ -207,7 +208,8 @@ export function useEntries() {
     queryKey: ['entries'],
     queryFn: fetchAllEntries,
     staleTime: 30_000,
-    placeholderData: [] as JournalEntry[],
+    // placeholderData 제거: 빈 배열이 "데이터 없음" UI를 유발하므로
+    // 대신 query-client.ts에서 캐시를 initialData로 주입
   });
 }
 
@@ -218,7 +220,6 @@ export function useTodayEntry() {
     queryFn: fetchAllEntries,
     select: (entries) => entries.find((e) => e.date === todayStr) ?? null,
     staleTime: 30_000,
-    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -229,7 +230,6 @@ export function useTodayEntries() {
     queryFn: fetchAllEntries,
     select: (entries) => entries.filter((e) => e.date === todayStr),
     staleTime: 30_000,
-    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -256,7 +256,6 @@ export function useTimeLetters() {
       };
     },
     staleTime: 30_000,
-    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -304,7 +303,6 @@ export function useArchiveLetters() {
       return { weekly, monthly, yearly };
     },
     staleTime: 30_000,
-    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -360,7 +358,7 @@ export function useAddEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
-      entry: Omit<JournalEntry, 'id' | 'createdAt' | 'weekday' | 'reflections'>,
+      entry: Omit<JournalEntry, 'id' | 'createdAt' | 'weekday' | 'reflections'>
     ) => {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -379,9 +377,7 @@ export function useAddEntry() {
       }
 
       const userId = session.user.id;
-      const photoUrl = entry.photo
-        ? await uploadPhoto(entry.photo, userId, entry.date)
-        : null;
+      const photoUrl = entry.photo ? await uploadPhoto(entry.photo, userId, entry.date) : null;
 
       const { data, error } = await supabase
         .from('entries')
@@ -415,9 +411,7 @@ export function useUpdateEntry() {
   return useMutation({
     mutationFn: async (updated: JournalEntry) => {
       const userId = await getCurrentUserId();
-      const photoUrl = updated.photo
-        ? await uploadPhoto(updated.photo, userId, updated.date)
-        : null;
+      const photoUrl = updated.photo ? await uploadPhoto(updated.photo, userId, updated.date) : null;
 
       const { data, error } = await supabase
         .from('entries')
