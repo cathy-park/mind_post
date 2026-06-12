@@ -147,34 +147,28 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
 }
 
 async function fetchAllEntries(): Promise<JournalEntry[]> {
-  // ── 1단계: 캐시 즉시 반환 (가장 빠른 경로) ──
-  // 캐시가 있으면 무조건 즉시 반환하고 백그라운드에서 최신 데이터를 가져옴
-  const cached = loadEntriesFromCache();
   const stored = getStoredSupabaseSession();
   const nowSecs = Math.floor(Date.now() / 1000);
 
-  if (cached?.entries && cached.entries.length > 0) {
-    // 유효한 토큰이 있으면 백그라운드 갱신 시작
-    if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
-      triggerBackgroundFetch(stored.access_token, stored.user.id);
-    }
-    return cached.entries;
-  }
-
-  // ── 2단계: 캐시 없음 + 유효한 토큰 → 직접 REST fetch (Supabase 클라이언트 초기화 불필요) ──
   if (stored?.access_token && stored.expires_at > nowSecs + 30 && stored.user?.id) {
+    const cached = loadEntriesFromCache();
+    if (cached?.entries) {
+      // 캐시 있음 → 즉시 표시 + 백그라운드 갱신
+      triggerBackgroundFetch(stored.access_token, stored.user.id);
+      return cached.entries;
+    }
+    // 캐시 없음(첫 방문 기기) → 직접 fetch 대기 (약 300~800ms)
     const direct = await fetchDirect(stored.access_token, stored.user.id);
     if (direct !== null) return direct;
+    // fetch 실패 → 게스트 항목 반환
   }
 
-  // ── 3단계: 토큰 만료 / 비로그인 → Supabase 클라이언트로 fallback ──
-  // getSession()은 토큰 갱신 시 느릴 수 있으므로 race로 제한
-  const sessionPromise = supabase.auth.getSession();
-  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-  const sessionResult = await Promise.race([sessionPromise, timeoutPromise]);
-
-  const session = sessionResult && 'data' in sessionResult ? sessionResult.data.session : null;
-
+  // 토큰 만료 / 비로그인 → 캐시 있으면 반환 (TOKEN_REFRESHED로 갱신)
+  const cached = loadEntriesFromCache();
+  if (cached?.entries) return cached.entries;
+  
+  // 캐시 없음 + 토큰 만료 → Supabase 초기화 완료까지 대기
+  const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) {
     return getGuestEntries()
       .map(guestToJournalEntry)
@@ -213,8 +207,7 @@ export function useEntries() {
     queryKey: ['entries'],
     queryFn: fetchAllEntries,
     staleTime: 30_000,
-    // placeholderData 제거: 빈 배열이 "데이터 없음" UI를 유발하므로
-    // 대신 query-client.ts에서 캐시를 initialData로 주입
+    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -225,6 +218,7 @@ export function useTodayEntry() {
     queryFn: fetchAllEntries,
     select: (entries) => entries.find((e) => e.date === todayStr) ?? null,
     staleTime: 30_000,
+    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -235,6 +229,7 @@ export function useTodayEntries() {
     queryFn: fetchAllEntries,
     select: (entries) => entries.filter((e) => e.date === todayStr),
     staleTime: 30_000,
+    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -261,6 +256,7 @@ export function useTimeLetters() {
       };
     },
     staleTime: 30_000,
+    placeholderData: [] as JournalEntry[],
   });
 }
 
@@ -308,6 +304,7 @@ export function useArchiveLetters() {
       return { weekly, monthly, yearly };
     },
     staleTime: 30_000,
+    placeholderData: [] as JournalEntry[],
   });
 }
 

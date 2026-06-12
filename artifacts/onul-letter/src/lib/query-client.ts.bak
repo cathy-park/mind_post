@@ -12,9 +12,7 @@ export const queryClient = new QueryClient({
 
 // 앱 시작 직후 이전 세션 캐시로 QueryClient 선주입
 // → 인증 완료 전에도 홈/편지함에 즉시 데이터 표시
-// updatedAt을 현재 시간으로 설정: staleTime 내에서 refetch를 방지하여
-// 캐시 데이터가 즉시 화면에 표시됨 (fetchAllEntries 내부에서 백그라운드 갱신 별도 수행)
 const cached = loadEntriesFromCache();
 if (cached) {
-  queryClient.setQueryData(['entries'], cached.entries, { updatedAt: Date.now() });
+  queryClient.setQueryData(['entries'], cached.entries, { updatedAt: cached.savedAt });
 }
