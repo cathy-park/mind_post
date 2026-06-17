@@ -195,7 +195,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
         </div>
 
         {/* ── CONTENT ────────────────────────────────────────────────────── */}
-        <div className="overflow-y-auto flex-1 px-5 pt-5 pb-36 space-y-5">
+        <div className="overflow-y-auto flex-1 px-5 pt-5 pb-20 space-y-5">
           <AnimatePresence mode="wait">
 
             {/* VIEW */}
