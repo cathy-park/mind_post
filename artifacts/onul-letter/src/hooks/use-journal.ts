@@ -19,6 +19,7 @@ interface DbEntry {
   short_answer: string;
   long_answer: string | null;
   photo_url: string | null;
+  audio_url: string | null;
   created_at: string;
   updated_at: string;
   reflection_comments: DbReflection[];
@@ -45,6 +46,7 @@ function dbToEntry(row: DbEntry): JournalEntry {
     shortAnswer: row.short_answer,
     longAnswer: row.long_answer ?? undefined,
     photo: row.photo_url ?? undefined,
+    audio: row.audio_url ?? undefined,
     createdAt: row.created_at,
     reflections: (row.reflection_comments ?? []).map((r) => ({
       id: r.id,
@@ -83,6 +85,34 @@ export async function uploadPhoto(base64: string, userId: string, date: string):
 
   const { data: { publicUrl } } = supabase.storage
     .from('journal-photos')
+    .getPublicUrl(path);
+
+  return publicUrl;
+}
+
+export async function uploadAudio(base64: string, userId: string, date: string): Promise<string | null> {
+  if (!base64.startsWith('data:')) return base64;
+
+  const [header, data] = base64.split(',');
+  const mimeType = header.match(/:(.*?);/)?.[1] ?? 'audio/mpeg';
+  const ext = mimeType.split('/')[1] ?? 'mp3';
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: mimeType });
+
+  const path = `${userId}/${date}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from('journal-audios')
+    .upload(path, blob, { upsert: true, contentType: mimeType });
+
+  if (error) {
+    console.error('Audio upload error:', error);
+    return base64;
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('journal-audios')
     .getPublicUrl(path);
 
   return publicUrl;
@@ -370,6 +400,7 @@ export function useAddEntry() {
           shortAnswer: entry.shortAnswer,
           longAnswer: entry.longAnswer,
           photo: entry.photo,
+          audio: entry.audio,
           createdAt: new Date().toISOString(),
         };
         addGuestEntry(guestEntry);
@@ -381,6 +412,10 @@ export function useAddEntry() {
         ? await uploadPhoto(entry.photo, userId, entry.date)
         : null;
 
+      const audioUrl = entry.audio
+        ? await uploadAudio(entry.audio, userId, entry.date)
+        : null;
+
       const { data, error } = await supabase
         .from('entries')
         .insert({
@@ -390,6 +425,7 @@ export function useAddEntry() {
           short_answer: entry.shortAnswer,
           long_answer: entry.longAnswer ?? null,
           photo_url: photoUrl,
+          audio_url: audioUrl,
         })
         .select('*, reflection_comments(*)')
         .single();
@@ -417,6 +453,10 @@ export function useUpdateEntry() {
         ? await uploadPhoto(updated.photo, userId, updated.date)
         : null;
 
+      const audioUrl = updated.audio
+        ? await uploadAudio(updated.audio, userId, updated.date)
+        : null;
+
       const { data, error } = await supabase
         .from('entries')
         .update({
@@ -424,6 +464,7 @@ export function useUpdateEntry() {
           short_answer: updated.shortAnswer,
           long_answer: updated.longAnswer ?? null,
           photo_url: photoUrl,
+          audio_url: audioUrl,
           entry_date: updated.date,
           updated_at: new Date().toISOString(),
         })

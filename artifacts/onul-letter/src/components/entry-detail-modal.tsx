@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Pencil, Trash2, Camera, Loader2, ChevronLeft, Send, MessageCircle } from 'lucide-react';
+import { X, Pencil, Trash2, Camera, Loader2, ChevronLeft, Send, MessageCircle, Mic } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
 import { resolveEmotion } from '@/lib/emotion-utils';
@@ -27,6 +27,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
   const [shortAnswer, setShortAnswer] = useState(initialEntry.shortAnswer);
   const [longAnswer, setLongAnswer] = useState(initialEntry.longAnswer ?? '');
   const [photo, setPhoto] = useState<string | undefined>(initialEntry.photo);
+  const [audio, setAudio] = useState<string | undefined>(initialEntry.audio);
 
   // Reflection
   const [reflectionText, setReflectionText] = useState('');
@@ -34,6 +35,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
   const [editingContent, setEditingContent] = useState('');
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: updateEntry, isPending: isSaving } = useUpdateEntry();
   const { mutateAsync: deleteEntry, isPending: isDeleting } = useDeleteEntry();
   const { mutateAsync: addReflection, isPending: isAddingReflection } = useAddReflection();
@@ -52,6 +54,15 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
     }
   };
 
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setAudio(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     if (!isAuthenticated) { toast({ title: '로그인이 필요해요', description: '기록을 수정하려면 로그인이 필요해요' }); await login(); return; }
     const updated = await updateEntry({
@@ -62,6 +73,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
       shortAnswer: shortAnswer.trim(),
       longAnswer: longAnswer.trim() || undefined,
       photo,
+      audio,
     });
     setEntry(updated);
     setScreen('view');
@@ -211,7 +223,13 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                 )}
 
                 {entry.photo && (
-                  <img src={entry.photo} alt="그날의 사진" className="w-full rounded-2xl border border-border" />
+                  <img src={entry.photo} alt="그날의 사진" className="w-full rounded-2xl border border-border mt-3" />
+                )}
+
+                {entry.audio && (
+                  <div className="w-full rounded-2xl border border-border p-3 bg-card mt-3">
+                    <audio controls src={entry.audio} className="w-full" />
+                  </div>
                 )}
 
                 {/* 포스트 sign-off for time letter */}
@@ -381,6 +399,21 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                   ) : (
                     <button onClick={() => fileRef.current?.click()} className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm">
                       <Camera className="w-5 h-5" /> 사진 추가하기
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">음원</p>
+                  <input type="file" accept="audio/*" className="hidden" ref={audioRef} onChange={handleAudioUpload} />
+                  {audio ? (
+                    <div className="relative rounded-2xl border border-border p-3 bg-card flex items-center gap-2">
+                      <audio controls src={audio} className="w-full" />
+                      <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-foreground p-1.5 rounded-full flex-shrink-0"><X className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => audioRef.current?.click()} className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm">
+                      <Mic className="w-5 h-5" /> 음원 추가하기
                     </button>
                   )}
                 </div>

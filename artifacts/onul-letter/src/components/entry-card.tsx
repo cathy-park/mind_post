@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { Image as ImageIcon, MessageCircle } from 'lucide-react';
+import { Image as ImageIcon, MessageCircle, Music } from 'lucide-react';
 import { JournalEntry } from '@/lib/constants';
 import { resolveEmotion } from '@/lib/emotion-utils';
 import { motion } from 'framer-motion';
@@ -45,11 +45,18 @@ export function EntryCard({ entry, onClick, highlight, label }: EntryCardProps) 
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {entry.photo && (
-            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-              <ImageIcon className="w-4 h-4" />
-            </div>
-          )}
+          <div className="flex gap-1.5">
+            {entry.photo && (
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                <ImageIcon className="w-4 h-4" />
+              </div>
+            )}
+            {entry.audio && (
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                <Music className="w-4 h-4" />
+              </div>
+            )}
+          </div>
           {reflectionCount > 0 && (
             <div className="flex items-center gap-1 text-xs font-bold text-violet-500 bg-violet-50 dark:bg-violet-950/30 px-2 py-0.5 rounded-full">
               <MessageCircle className="w-3 h-3" />

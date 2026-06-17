@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Image, X, Loader2, ChevronDown, ChevronUp, AlertCircle, LogIn, Cloud, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Camera, Image, X, Loader2, ChevronDown, ChevronUp, AlertCircle, LogIn, Cloud, Plus, Pencil, Trash2, Mic } from 'lucide-react';
 import { MobileContainer } from '@/components/layout/mobile-container';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { MascotGuide, PoseMascot } from '@/components/mascot-card';
@@ -96,6 +96,7 @@ export default function Record() {
   const [shortAnswer, setShortAnswer] = useState('');
   const [longAnswer, setLongAnswer] = useState('');
   const [photo, setPhoto] = useState<string | undefined>();
+  const [audio, setAudio] = useState<string | undefined>();
   const [isSuccess, setIsSuccess] = useState(false);
   const [savedAsGuest, setSavedAsGuest] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
@@ -109,6 +110,7 @@ export default function Record() {
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLInputElement>(null);
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
 
@@ -124,6 +126,15 @@ export default function Record() {
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => setPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleAudioFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setAudio(reader.result as string);
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -144,6 +155,7 @@ export default function Record() {
         shortAnswer: shortAnswer.trim(),
         longAnswer: longAnswer.trim() || undefined,
         photo,
+        audio,
       });
       setIsSuccess(true);
       if (!isGuest) {
@@ -402,8 +414,15 @@ export default function Record() {
                   ref={cameraRef}
                   onChange={handlePhotoFile}
                 />
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  ref={audioRef}
+                  onChange={handleAudioFile}
+                />
 
-                {/* Photo display / picker trigger */}
+                {/* Photo display */}
                 {photo ? (
                   <div className="relative rounded-2xl overflow-hidden border border-border">
                     <img src={photo} alt="Uploaded" className="w-full object-cover max-h-56" />
@@ -414,13 +433,40 @@ export default function Record() {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowPhotoOptions(true)}
-                    className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
-                  >
-                    <Camera className="w-5 h-5" /> 사진 추가하기
-                  </button>
+                ) : null}
+
+                {/* Audio display */}
+                {audio ? (
+                  <div className="relative rounded-2xl border border-border p-3 bg-card flex items-center gap-2">
+                    <audio controls src={audio} className="w-full" />
+                    <button
+                      onClick={() => setAudio(undefined)}
+                      className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : null}
+
+                {(!photo || !audio) && (
+                  <div className="flex gap-2">
+                    {!photo && (
+                      <button
+                        onClick={() => setShowPhotoOptions(true)}
+                        className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                      >
+                        <Camera className="w-5 h-5" /> 사진 추가
+                      </button>
+                    )}
+                    {!audio && (
+                      <button
+                        onClick={() => audioRef.current?.click()}
+                        className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                      >
+                        <Mic className="w-5 h-5" /> 음원 추가
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 

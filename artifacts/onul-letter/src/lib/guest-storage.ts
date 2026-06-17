@@ -10,6 +10,7 @@ export interface GuestEntry {
   shortAnswer: string;
   longAnswer?: string;
   photo?: string;
+  audio?: string;
   createdAt: string;
 }
 
@@ -57,6 +58,7 @@ export function guestToJournalEntry(g: GuestEntry): JournalEntry {
     shortAnswer: g.shortAnswer,
     longAnswer: g.longAnswer,
     photo: g.photo,
+    audio: g.audio,
     createdAt: g.createdAt,
     reflections: [],
   };
