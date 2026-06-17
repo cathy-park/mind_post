@@ -195,7 +195,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
         </div>
 
         {/* ── CONTENT ────────────────────────────────────────────────────── */}
-        <div className="overflow-y-auto flex-1 px-5 pt-5 pb-16 space-y-5">
+        <div className="overflow-y-auto flex-1 px-5 pt-5 pb-36 space-y-5">
           <AnimatePresence mode="wait">
 
             {/* VIEW */}
@@ -388,33 +388,48 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">사진</p>
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">미디어 첨부</p>
+
                   <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handlePhotoUpload} />
+                  <input type="file" accept="audio/*" className="hidden" ref={audioRef} onChange={handleAudioUpload} />
+
+                  {/* 사진 */}
                   {photo ? (
                     <div className="relative rounded-2xl overflow-hidden border border-border">
                       <img src={photo} alt="사진" className="w-full object-cover" />
                       <button onClick={() => setPhoto(undefined)} className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full"><X className="w-4 h-4" /></button>
                     </div>
-                  ) : (
-                    <button onClick={() => fileRef.current?.click()} className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm">
-                      <Camera className="w-5 h-5" /> 사진 추가하기
-                    </button>
-                  )}
-                </div>
+                  ) : null}
 
-                <div className="space-y-2">
-                  <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">음원</p>
-                  <input type="file" accept="audio/*" className="hidden" ref={audioRef} onChange={handleAudioUpload} />
+                  {/* 음원 */}
                   {audio ? (
-                    <div className="relative rounded-2xl border border-border p-3 bg-card flex items-center gap-2">
+                    <div className="rounded-2xl border border-border p-3 bg-muted/40 flex items-center gap-2">
                       <audio controls src={audio} className="w-full" />
-                      <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-foreground p-1.5 rounded-full flex-shrink-0"><X className="w-4 h-4" /></button>
+                      <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"><X className="w-4 h-4" /></button>
                     </div>
-                  ) : (
-                    <button onClick={() => audioRef.current?.click()} className="w-full py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm">
-                      <Mic className="w-5 h-5" /> 음원 추가하기
-                    </button>
+                  ) : null}
+
+                  {/* 미첨부 시 버튼 */}
+                  {(!photo || !audio) && (
+                    <div className="flex gap-2">
+                      {!photo && (
+                        <button
+                          onClick={() => fileRef.current?.click()}
+                          className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                        >
+                          <Camera className="w-5 h-5" /> 사진 추가
+                        </button>
+                      )}
+                      {!audio && (
+                        <button
+                          onClick={() => audioRef.current?.click()}
+                          className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                        >
+                          <Mic className="w-5 h-5" /> 음원 추가
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </motion.div>
