@@ -1,12 +1,9 @@
 {
   "outputDirectory": "dist/public",
-  "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "pnpm run build",
+  "installCommand": "echo 'Skipping install'",
+  "buildCommand": "echo 'Skipping build'",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
