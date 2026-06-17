@@ -4,7 +4,7 @@ import { JournalEntry, AppSettings, DEFAULT_SETTINGS, WEEKDAYS, EmotionType, Ref
 import { EMOTIONS } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import { GuestEntry, getGuestEntries, addGuestEntry, upsertGuestEntry, deleteGuestEntry, guestToJournalEntry } from '@/lib/guest-storage';
-import { saveEntriesToCache, loadEntriesFromCache } from '@/lib/entries-cache';
+import { saveEntriesToCache, loadEntriesFromCache, clearEntriesCache } from '@/lib/entries-cache';
 import '@/lib/auth-ready'; // INITIAL_SESSION 구독 설정 (side-effect)
 
 const SETTINGS_KEY = 'onul-settings';
