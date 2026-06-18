@@ -121,7 +121,9 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
         shortAnswer: shortAnswer.trim(),
         longAnswer: longAnswer.trim() || undefined,
         photo: photos[0],
+        photos,
         audio: audios[0],
+        audios,
       });
       setEntry(updated);
       setScreen('view');
@@ -273,13 +275,24 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                   </div>
                 )}
 
-                {entry.photo && (
-                  <img src={entry.photo} alt="그날의 사진" className="w-full rounded-2xl border border-border mt-3" />
+                {entry.photos && entry.photos.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 mt-3 scrollbar-hide snap-x snap-mandatory">
+                    {entry.photos.map((p, idx) => (
+                      <div key={idx} className={`relative flex-shrink-0 ${entry.photos!.length === 1 ? 'w-full h-auto' : 'w-64 h-64'} rounded-2xl overflow-hidden border border-border snap-start`}>
+                        <img src={p} alt={`그날의 사진 ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
                 )}
 
-                {entry.audio && (
-                  <div className="w-full rounded-2xl border border-border p-3 bg-card mt-3">
-                    <audio controls src={entry.audio} className="w-full" />
+                {entry.audios && entry.audios.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    {entry.audios.map((src, idx) => (
+                      <div key={idx} className="w-full rounded-2xl border border-border p-3 bg-card flex items-center gap-2">
+                        {entry.audios!.length > 1 && <span className="text-xs text-muted-foreground font-bold flex-shrink-0 w-4 text-center">{idx + 1}</span>}
+                        <audio controls src={src} className="w-full" />
+                      </div>
+                    ))}
                   </div>
                 )}
 

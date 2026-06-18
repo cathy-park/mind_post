@@ -36,7 +36,21 @@ interface DbReflection {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function parseUrls(val: string | null): string[] {
+  if (!val) return [];
+  try {
+    const parsed = JSON.parse(val);
+    if (Array.isArray(parsed)) return parsed;
+    return [val];
+  } catch {
+    return val.split(',').filter(Boolean);
+  }
+}
+
 function dbToEntry(row: DbEntry): JournalEntry {
+  const photosArray = parseUrls(row.photo_url);
+  const audiosArray = parseUrls(row.audio_url);
+
   return {
     id: row.id,
     date: row.entry_date,
@@ -45,8 +59,10 @@ function dbToEntry(row: DbEntry): JournalEntry {
     question: EMOTIONS[row.emotion as EmotionType]?.question ?? '',
     shortAnswer: row.short_answer,
     longAnswer: row.long_answer ?? undefined,
-    photo: row.photo_url ?? undefined,
-    audio: row.audio_url ?? undefined,
+    photo: photosArray[0],
+    photos: photosArray,
+    audio: audiosArray[0],
+    audios: audiosArray,
     createdAt: row.created_at,
     reflections: (row.reflection_comments ?? []).map((r) => ({
       id: r.id,
@@ -399,8 +415,10 @@ export function useAddEntry() {
           emotion: entry.emotion,
           shortAnswer: entry.shortAnswer,
           longAnswer: entry.longAnswer,
-          photo: entry.photo,
-          audio: entry.audio,
+          photo: entry.photos?.[0],
+          photos: entry.photos,
+          audio: entry.audios?.[0],
+          audios: entry.audios,
           createdAt: new Date().toISOString(),
         };
         addGuestEntry(guestEntry);
@@ -408,13 +426,20 @@ export function useAddEntry() {
       }
 
       const userId = session.user.id;
-      const photoUrl = entry.photo
-        ? await uploadPhoto(entry.photo, userId, entry.date)
-        : null;
+      
+      const photoUrls = [];
+      for (const p of entry.photos || []) {
+        const url = await uploadPhoto(p, userId, entry.date);
+        if (url) photoUrls.push(url);
+      }
+      const photoUrl = photoUrls.length > 0 ? JSON.stringify(photoUrls) : null;
 
-      const audioUrl = entry.audio
-        ? await uploadAudio(entry.audio, userId, entry.date)
-        : null;
+      const audioUrls = [];
+      for (const a of entry.audios || []) {
+        const url = await uploadAudio(a, userId, entry.date);
+        if (url) audioUrls.push(url);
+      }
+      const audioUrl = audioUrls.length > 0 ? JSON.stringify(audioUrls) : null;
 
       const { data, error } = await supabase
         .from('entries')
@@ -426,8 +451,6 @@ export function useAddEntry() {
           long_answer: entry.longAnswer ?? null,
           photo_url: photoUrl,
           audio_url: audioUrl,
-          //audio_urls omitted for compatibility
-
         })
         .select('*, reflection_comments(*)')
         .single();
@@ -451,13 +474,20 @@ export function useUpdateEntry() {
   return useMutation({
     mutationFn: async (updated: JournalEntry) => {
       const userId = await getCurrentUserId();
-      const photoUrl = updated.photo
-        ? await uploadPhoto(updated.photo, userId, updated.date)
-        : null;
+      
+      const photoUrls = [];
+      for (const p of updated.photos || []) {
+        const url = await uploadPhoto(p, userId, updated.date);
+        if (url) photoUrls.push(url);
+      }
+      const photoUrl = photoUrls.length > 0 ? JSON.stringify(photoUrls) : null;
 
-      const audioUrl = updated.audio
-        ? await uploadAudio(updated.audio, userId, updated.date)
-        : null;
+      const audioUrls = [];
+      for (const a of updated.audios || []) {
+        const url = await uploadAudio(a, userId, updated.date);
+        if (url) audioUrls.push(url);
+      }
+      const audioUrl = audioUrls.length > 0 ? JSON.stringify(audioUrls) : null;
 
       const { data, error } = await supabase
         .from('entries')

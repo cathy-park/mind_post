@@ -46,9 +46,11 @@ export interface JournalEntry {
   question: string;
   shortAnswer: string;
   longAnswer?: string;
-  photo?: string; // base64
-  audio?: string; // base64 (upload input)
-  audioUrls?: string[]; // stored URLs (array, usually length 1)
+  photo?: string; // legacy single
+  photos?: string[]; // multiple photos
+  audio?: string; // legacy single
+  audios?: string[]; // multiple audios
+  audioUrls?: string[]; // legacy
   createdAt: string; // ISO
   reflections?: Reflection[];
 }

@@ -274,8 +274,10 @@ export default function Record() {
         question,
         shortAnswer: shortAnswer.trim(),
         longAnswer: longAnswer.trim() || undefined,
-        photo: photos[0], // first photo for DB (single column)
-        audio: audios[0], // first audio for DB (single column)
+        photo: photos[0],
+        photos,
+        audio: audios[0],
+        audios,
       });
       setIsSuccess(true);
       if (!isGuest) {
