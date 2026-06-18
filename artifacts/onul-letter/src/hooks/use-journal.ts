@@ -466,7 +466,7 @@ export function useUpdateEntry() {
           short_answer: updated.shortAnswer,
           long_answer: updated.longAnswer ?? null,
           photo_url: photoUrl,
-          audio_urls: audioUrl ? [audioUrl] : [],
+          audio_url: audioUrl,
           entry_date: updated.date,
           updated_at: new Date().toISOString(),
         })

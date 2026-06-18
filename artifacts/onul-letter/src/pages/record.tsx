@@ -166,8 +166,9 @@ export default function Record() {
         setTimeout(() => setLocation('/'), 2800);
       }
     } catch (err) {
-      console.error('Save entry error:', err);
-      setSaveError('저장 중 문제가 생겼어요. 다시 시도해 주세요.');
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Save entry error:', msg);
+      setSaveError(`저장 오류: ${msg}`);
     }
   };
 
