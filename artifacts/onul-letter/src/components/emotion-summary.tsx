@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, ChevronUp } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 import { subDays, parseISO, isAfter } from 'date-fns';
 import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
 
-type Range = '7일' | '30일' | '전체' | string; // string is YYYY-MM
+type Range = '7일' | '30일' | '전체';
 
-const RANGE_OPTIONS: ('7일' | '30일' | '전체')[] = ['7일', '30일', '전체'];
+const RANGE_OPTIONS: Range[] = ['7일', '30일', '전체'];
 
 interface Props {
   entries: JournalEntry[];
@@ -17,8 +17,7 @@ interface Props {
 function getLabel(range: Range) {
   if (range === '7일') return '최근 7일';
   if (range === '30일') return '최근 30일';
-  if (range === '전체') return '전체 기간';
-  return `${range.slice(0, 4)}년 ${Number(range.slice(5))}월`;
+  return '전체 기간';
 }
 
 function summaryMessage(sorted: [EmotionType, number][], total: number, range: Range): string {
@@ -32,22 +31,11 @@ function summaryMessage(sorted: [EmotionType, number][], total: number, range: R
 
 export function EmotionSummary({ entries, expanded = true, onToggle }: Props) {
   const [range, setRange] = useState<Range>('30일');
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-
-  const availableMonths = useMemo(() => {
-    const months = new Set<string>();
-    entries.forEach(e => months.add(e.date.slice(0, 7)));
-    return Array.from(months).sort().reverse();
-  }, [entries]);
 
   const filtered = useMemo(() => {
     if (range === '전체') return entries;
-    if (range === '7일' || range === '30일') {
-      const cutoff = subDays(new Date(), range === '7일' ? 7 : 30);
-      return entries.filter(e => isAfter(parseISO(e.date), cutoff));
-    }
-    // YYYY-MM
-    return entries.filter(e => e.date.startsWith(range));
+    const cutoff = subDays(new Date(), range === '7일' ? 7 : 30);
+    return entries.filter(e => isAfter(parseISO(e.date), cutoff));
   }, [entries, range]);
 
   const counts = useMemo(() => {
@@ -65,7 +53,7 @@ export function EmotionSummary({ entries, expanded = true, onToggle }: Props) {
   const total = filtered.length;
 
   return (
-    <div className="surface-card overflow-visible">
+    <div className="surface-card overflow-hidden">
       {/* Header — always visible */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <p className="text-sm font-bold text-foreground">모아의 감정 기록</p>
@@ -84,43 +72,6 @@ export function EmotionSummary({ entries, expanded = true, onToggle }: Props) {
                 {opt}
               </button>
             ))}
-            {/* 월별 피커 */}
-            <div className="relative">
-              <button
-                onClick={() => setShowMonthPicker(v => !v)}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  !RANGE_OPTIONS.includes(range as any)
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                {!RANGE_OPTIONS.includes(range as any)
-                  ? `${Number(range.slice(5))}월`
-                  : '월별'}
-              </button>
-              {showMonthPicker && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMonthPicker(false)} />
-                  <div className="absolute right-0 top-8 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[120px]">
-                    {availableMonths.map(m => (
-                      <button
-                        key={m}
-                        onClick={() => { setRange(m); setShowMonthPicker(false); }}
-                        className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
-                          range === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
-                        }`}
-                      >
-                        {m.slice(0, 4)}년 {Number(m.slice(5))}월
-                      </button>
-                    ))}
-                    {availableMonths.length === 0 && (
-                      <div className="px-4 py-3 text-xs text-muted-foreground text-center">기록이 없어요</div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
           {onToggle && (
             <button
