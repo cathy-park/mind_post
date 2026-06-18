@@ -13,6 +13,7 @@ import { PoseMascot, MascotGuide } from '@/components/mascot-card';
 import { useEntries } from '@/hooks/use-journal';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 type Tab = 'list' | 'insights';
 
@@ -162,93 +163,89 @@ export default function Archive() {
                 </button>
                 
                 {/* Month selector */}
-                <div className="relative flex-shrink-0">
-                  <button
-                    onClick={() => setShowMonthPicker(v => !v)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
-                      selectedMonth !== 'all'
-                        ? 'bg-secondary text-secondary-foreground shadow-sm'
-                        : 'bg-card border border-card-border text-foreground'
-                    }`}
-                  >
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    {selectedMonth === 'all'
-                      ? '기간'
-                      : `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5))}월`}
-                  </button>
-                  {showMonthPicker && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowMonthPicker(false)} />
-                      <div className="absolute left-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
+                        selectedMonth !== 'all'
+                          ? 'bg-secondary text-secondary-foreground shadow-sm'
+                          : 'bg-card border border-card-border text-foreground'
+                      }`}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      {selectedMonth === 'all'
+                        ? '기간'
+                        : `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5))}월`}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 min-w-[160px] rounded-2xl overflow-hidden" align="start" sideOffset={8}>
+                    <div className="flex flex-col">
+                      <button
+                        onClick={() => { setSelectedMonth('all'); setShowMonthPicker(false); }}
+                        className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
+                          selectedMonth === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                        }`}
+                      >
+                        기간
+                      </button>
+                      {availableMonths.map(m => (
                         <button
-                          onClick={() => { setSelectedMonth('all'); setShowMonthPicker(false); }}
-                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
-                            selectedMonth === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                          key={m}
+                          onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
+                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center justify-between gap-2 ${
+                            selectedMonth === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
                           }`}
                         >
-                          기간
+                          <span>{m.slice(0, 4)}년 {Number(m.slice(5))}월</span>
+                          <span className="text-muted-foreground text-[10px]">
+                            {entries.filter(e => e.date.startsWith(m)).length}개
+                          </span>
                         </button>
-                        {availableMonths.map(m => (
-                          <button
-                            key={m}
-                            onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
-                            className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center justify-between gap-2 ${
-                              selectedMonth === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
-                            }`}
-                          >
-                            <span>{m.slice(0, 4)}년 {Number(m.slice(5))}월</span>
-                            <span className="text-muted-foreground text-[10px]">
-                              {entries.filter(e => e.date.startsWith(m)).length}개
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 {/* Emotion selector */}
-                <div className="relative flex-shrink-0">
-                  <button
-                    onClick={() => setShowEmotionPicker(v => !v)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
-                      emotionFilter !== 'all'
-                        ? 'bg-secondary text-secondary-foreground shadow-sm'
-                        : 'bg-card border border-card-border text-foreground'
-                    }`}
-                  >
-                    {emotionFilter === 'all'
-                      ? '감정'
-                      : `${EMOTIONS[emotionFilter].emoji} ${emotionFilter}`}
-                  </button>
-                  {showEmotionPicker && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowEmotionPicker(false)} />
-                      <div className="absolute left-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[120px] max-h-[300px] overflow-y-auto scrollbar-hide">
+                <Popover open={showEmotionPicker} onOpenChange={setShowEmotionPicker}>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
+                        emotionFilter !== 'all'
+                          ? 'bg-secondary text-secondary-foreground shadow-sm'
+                          : 'bg-card border border-card-border text-foreground'
+                      }`}
+                    >
+                      {emotionFilter === 'all'
+                        ? '감정'
+                        : `${EMOTIONS[emotionFilter].emoji} ${emotionFilter}`}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 min-w-[120px] rounded-2xl overflow-hidden" align="start" sideOffset={8}>
+                    <div className="flex flex-col max-h-[300px] overflow-y-auto scrollbar-hide">
+                      <button
+                        onClick={() => { setEmotionFilter('all'); setShowEmotionPicker(false); }}
+                        className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
+                          emotionFilter === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                        }`}
+                      >
+                        전체 감정
+                      </button>
+                      {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
                         <button
-                          onClick={() => { setEmotionFilter('all'); setShowEmotionPicker(false); }}
-                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
-                            emotionFilter === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                          key={e}
+                          onClick={() => { setEmotionFilter(e); setShowEmotionPicker(false); }}
+                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center gap-2 ${
+                            emotionFilter === e ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
                           }`}
                         >
-                          전체 감정
+                          <span>{EMOTIONS[e].emoji}</span>
+                          <span>{e}</span>
                         </button>
-                        {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
-                          <button
-                            key={e}
-                            onClick={() => { setEmotionFilter(e); setShowEmotionPicker(false); }}
-                            className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center gap-2 ${
-                              emotionFilter === e ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
-                            }`}
-                          >
-                            <span>{EMOTIONS[e].emoji}</span>
-                            <span>{e}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 <button
                   onClick={() => setPhotoOnly(v => !v)}
