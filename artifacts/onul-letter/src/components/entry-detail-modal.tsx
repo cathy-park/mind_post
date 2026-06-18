@@ -112,18 +112,22 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
 
   const handleSave = async () => {
     if (!isAuthenticated) { toast({ title: '로그인이 필요해요', description: '기록을 수정하려면 로그인이 필요해요' }); await login(); return; }
-    const updated = await updateEntry({
-      ...entry,
-      date,
-      emotion,
-      question: resolveEmotion(emotion).question || entry.question,
-      shortAnswer: shortAnswer.trim(),
-      longAnswer: longAnswer.trim() || undefined,
-      photo: photos[0],
-      audio: audios[0],
-    });
-    setEntry(updated);
-    setScreen('view');
+    try {
+      const updated = await updateEntry({
+        ...entry,
+        date,
+        emotion,
+        question: resolveEmotion(emotion).question || entry.question,
+        shortAnswer: shortAnswer.trim(),
+        longAnswer: longAnswer.trim() || undefined,
+        photo: photos[0],
+        audio: audios[0],
+      });
+      setEntry(updated);
+      setScreen('view');
+    } catch (err) {
+      toast({ title: '저장 오류', description: err instanceof Error ? err.message : '수정 내용을 저장하는 중 문제가 발생했습니다.' });
+    }
   };
 
   const handleDelete = async () => {
