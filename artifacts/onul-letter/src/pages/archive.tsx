@@ -151,99 +151,91 @@ export default function Archive() {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-col gap-2.5 pb-2">
-                {/* 첫 번째 줄: 정렬, 년월피커, 감정필터 */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1">
-                    <button
-                      onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-card border border-card-border rounded-full text-xs font-semibold text-foreground"
-                    >
-                      <Filter className="w-3.5 h-3.5" />
-                      {sortOrder === 'desc' ? '최신순' : '과거순'}
-                    </button>
-                    
-                    {/* Month selector */}
-                    <div className="relative flex-shrink-0">
-                      <button
-                        onClick={() => setShowMonthPicker(v => !v)}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
-                          selectedMonth !== 'all'
-                            ? 'bg-secondary text-secondary-foreground shadow-sm'
-                            : 'bg-card border border-card-border text-foreground'
-                        }`}
-                      >
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        {selectedMonth === 'all'
-                          ? '전체 기간'
-                          : `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5))}월`}
-                      </button>
-                      {showMonthPicker && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowMonthPicker(false)} />
-                          <div className="absolute left-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
-                            <button
-                              onClick={() => { setSelectedMonth('all'); setShowMonthPicker(false); }}
-                              className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
-                                selectedMonth === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
-                              }`}
-                            >
-                              전체 기간
-                            </button>
-                            {availableMonths.map(m => (
-                              <button
-                                key={m}
-                                onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
-                                className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center justify-between gap-2 ${
-                                  selectedMonth === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
-                                }`}
-                              >
-                                <span>{m.slice(0, 4)}년 {Number(m.slice(5))}월</span>
-                                <span className="text-muted-foreground text-[10px]">
-                                  {entries.filter(e => e.date.startsWith(m)).length}개
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <select
-                    value={emotionFilter}
-                    onChange={e => setEmotionFilter(e.target.value as any)}
-                    className="flex-shrink-0 px-3 py-2 bg-card border border-card-border rounded-full text-xs font-semibold text-foreground focus:outline-none appearance-none pr-7"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <button
+                  onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-card border border-card-border rounded-full text-xs font-semibold text-foreground"
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  {sortOrder === 'desc' ? '최신순' : '과거순'}
+                </button>
+                
+                {/* Month selector */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowMonthPicker(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
+                      selectedMonth !== 'all'
+                        ? 'bg-secondary text-secondary-foreground shadow-sm'
+                        : 'bg-card border border-card-border text-foreground'
+                    }`}
                   >
-                    <option value="all">모든 감정</option>
-                    {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
-                      <option key={e} value={e}>{EMOTIONS[e].emoji} {e}</option>
-                    ))}
-                  </select>
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    {selectedMonth === 'all'
+                      ? '전체 기간'
+                      : `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5))}월`}
+                  </button>
+                  {showMonthPicker && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMonthPicker(false)} />
+                      <div className="absolute left-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                        <button
+                          onClick={() => { setSelectedMonth('all'); setShowMonthPicker(false); }}
+                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
+                            selectedMonth === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                          }`}
+                        >
+                          전체 기간
+                        </button>
+                        {availableMonths.map(m => (
+                          <button
+                            key={m}
+                            onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
+                            className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center justify-between gap-2 ${
+                              selectedMonth === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                            }`}
+                          >
+                            <span>{m.slice(0, 4)}년 {Number(m.slice(5))}월</span>
+                            <span className="text-muted-foreground text-[10px]">
+                              {entries.filter(e => e.date.startsWith(m)).length}개
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* 두 번째 줄: 사진, 음성, 댓글 토글 */}
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                  <button
-                    onClick={() => setPhotoOnly(v => !v)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${photoOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
-                  >
-                    📷 사진
-                  </button>
-                  <button
-                    onClick={() => setAudioOnly(v => !v)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${audioOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
-                  >
-                    🎵 음성
-                  </button>
-                  <button
-                    onClick={() => setReflectionOnly(v => !v)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${reflectionOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
-                  >
-                    💬 댓글
-                  </button>
-                </div>
+                <select
+                  value={emotionFilter}
+                  onChange={e => setEmotionFilter(e.target.value as any)}
+                  className="flex-shrink-0 px-3 py-2 bg-card border border-card-border rounded-full text-xs font-semibold text-foreground focus:outline-none appearance-none pr-7"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
+                >
+                  <option value="all">모든 감정</option>
+                  {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
+                    <option key={e} value={e}>{EMOTIONS[e].emoji} {e}</option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => setPhotoOnly(v => !v)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${photoOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
+                >
+                  📷 사진
+                </button>
+                <button
+                  onClick={() => setAudioOnly(v => !v)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${audioOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
+                >
+                  🎵 음성
+                </button>
+                <button
+                  onClick={() => setReflectionOnly(v => !v)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${reflectionOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
+                >
+                  💬 댓글
+                </button>
               </div>
             </div>
           )}
