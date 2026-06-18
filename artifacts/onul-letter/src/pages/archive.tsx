@@ -29,11 +29,24 @@ export default function Archive() {
   const [monthView, setMonthView] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [summaryExpanded, setSummaryExpanded] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' or 'yyyy-MM'
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Derive available months from all entries
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    entries.forEach(e => months.add(e.date.slice(0, 7)));
+    return Array.from(months).sort().reverse(); // newest first
+  }, [entries]);
 
   const filtered = useMemo(() => {
     let result = [...entries];
-    // Text search: match against shortAnswer, longAnswer, emotion, reflection comments
+    // Month filter
+    if (selectedMonth !== 'all') {
+      result = result.filter(e => e.date.startsWith(selectedMonth));
+    }
+    // Text search
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       result = result.filter(e => {
@@ -51,7 +64,7 @@ export default function Archive() {
     if (reflectionOnly) result = result.filter(e => (e.reflections?.length ?? 0) > 0);
     if (sortOrder === 'asc') result.reverse();
     return result;
-  }, [entries, searchQuery, emotionFilter, photoOnly, reflectionOnly, sortOrder]);
+  }, [entries, selectedMonth, searchQuery, emotionFilter, photoOnly, reflectionOnly, sortOrder]);
 
   // Group by year-month for "월별 보기"
   const grouped = useMemo(() => {
@@ -174,6 +187,55 @@ export default function Archive() {
                 >
                   <CalendarDays className="w-3.5 h-3.5" /> 월별 보기
                 </button>
+                {/* Month selector */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowMonthPicker(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
+                      selectedMonth !== 'all'
+                        ? 'bg-secondary text-secondary-foreground shadow-sm'
+                        : 'bg-card border border-card-border text-foreground'
+                    }`}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    {selectedMonth === 'all'
+                      ? '월 선택'
+                      : `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5))}월`}
+                  </button>
+                  {showMonthPicker && (
+                    <>
+                      {/* backdrop */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowMonthPicker(false)}
+                      />
+                      <div className="absolute right-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[160px]">
+                        <button
+                          onClick={() => { setSelectedMonth('all'); setShowMonthPicker(false); }}
+                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
+                            selectedMonth === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                          }`}
+                        >
+                          전체 기간
+                        </button>
+                        {availableMonths.map(m => (
+                          <button
+                            key={m}
+                            onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
+                            className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center justify-between gap-2 ${
+                              selectedMonth === m ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                            }`}
+                          >
+                            <span>{m.slice(0, 4)}년 {Number(m.slice(5))}월</span>
+                            <span className="text-muted-foreground text-[10px]">
+                              {entries.filter(e => e.date.startsWith(m)).length}개
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
