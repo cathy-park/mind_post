@@ -30,7 +30,7 @@ async function runMigration() {
 
   const { data: entries, error: fetchError } = await supabase
     .from('entries')
-    .select('id, user_id, entry_date, photo_url, audio_url');
+    .select('id, user_id, entry_date, photo_url');
 
   if (fetchError) {
     console.error("Failed to fetch entries:", fetchError);
@@ -45,7 +45,6 @@ async function runMigration() {
   console.log(`Found ${entries.length} entries. Checking for Base64 media...`);
 
   let migratedPhotos = 0;
-  let migratedAudios = 0;
 
   for (const entry of entries) {
     const updates: any = {};
@@ -72,28 +71,6 @@ async function runMigration() {
       }
     }
 
-    // Check audio_url
-    if (entry.audio_url && entry.audio_url.startsWith('data:audio/')) {
-      console.log(`Migrating audio for entry ${entry.id}...`);
-      const decoded = decodeBase64(entry.audio_url);
-      if (decoded) {
-        const filePath = `${entry.user_id}/${entry.entry_date}-${Date.now()}-migrated.${decoded.ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('journal-audios')
-          .upload(filePath, decoded.buffer, { contentType: decoded.mimeType, upsert: true });
-
-        if (uploadError) {
-          console.error(`Failed to upload audio for entry ${entry.id}:`, uploadError);
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('journal-audios')
-            .getPublicUrl(filePath);
-          updates.audio_url = publicUrl;
-          migratedAudios++;
-        }
-      }
-    }
-
     // Update DB if there are changes
     if (Object.keys(updates).length > 0) {
       const { error: updateError } = await supabase
@@ -112,7 +89,6 @@ async function runMigration() {
   console.log("===================================");
   console.log("Migration finished.");
   console.log(`Total photos migrated: ${migratedPhotos}`);
-  console.log(`Total audios migrated: ${migratedAudios}`);
 }
 
 runMigration().catch(console.error);

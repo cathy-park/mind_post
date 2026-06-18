@@ -50,3 +50,5 @@ Thumbs.db
 .vercel
 attached_assets/
 .env*.local
+cleanup-orphan-report.json
+*.tar.gz
