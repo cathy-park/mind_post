@@ -31,6 +31,7 @@ export default function Archive() {
   const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' or 'yyyy-MM'
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showEmotionPicker, setShowEmotionPicker] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Derive available months from all entries
@@ -206,17 +207,48 @@ export default function Archive() {
                   )}
                 </div>
 
-                <select
-                  value={emotionFilter}
-                  onChange={e => setEmotionFilter(e.target.value as any)}
-                  className="flex-shrink-0 px-3 py-2 bg-card border border-card-border rounded-full text-xs font-semibold text-foreground focus:outline-none appearance-none pr-7"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
-                >
-                  <option value="all">감정</option>
-                  {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
-                    <option key={e} value={e}>{EMOTIONS[e].emoji} {e}</option>
-                  ))}
-                </select>
+                {/* Emotion selector */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowEmotionPicker(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
+                      emotionFilter !== 'all'
+                        ? 'bg-secondary text-secondary-foreground shadow-sm'
+                        : 'bg-card border border-card-border text-foreground'
+                    }`}
+                  >
+                    {emotionFilter === 'all'
+                      ? '감정'
+                      : `${EMOTIONS[emotionFilter].emoji} ${emotionFilter}`}
+                  </button>
+                  {showEmotionPicker && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowEmotionPicker(false)} />
+                      <div className="absolute left-0 top-10 z-50 bg-card border border-card-border rounded-2xl shadow-xl overflow-hidden min-w-[120px] max-h-[300px] overflow-y-auto scrollbar-hide">
+                        <button
+                          onClick={() => { setEmotionFilter('all'); setShowEmotionPicker(false); }}
+                          className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted ${
+                            emotionFilter === 'all' ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                          }`}
+                        >
+                          전체 감정
+                        </button>
+                        {(Object.keys(EMOTIONS) as EmotionType[]).map(e => (
+                          <button
+                            key={e}
+                            onClick={() => { setEmotionFilter(e); setShowEmotionPicker(false); }}
+                            className={`w-full px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-muted flex items-center gap-2 ${
+                              emotionFilter === e ? 'text-primary font-bold bg-primary/5' : 'text-foreground'
+                            }`}
+                          >
+                            <span>{EMOTIONS[e].emoji}</span>
+                            <span>{e}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <button
                   onClick={() => setPhotoOnly(v => !v)}
