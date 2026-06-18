@@ -25,6 +25,7 @@ export default function Archive() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [emotionFilter, setEmotionFilter] = useState<EmotionType | 'all'>('all');
   const [photoOnly, setPhotoOnly] = useState(false);
+  const [audioOnly, setAudioOnly] = useState(false);
   const [reflectionOnly, setReflectionOnly] = useState(false);
   const [monthView, setMonthView] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,11 +61,12 @@ export default function Archive() {
       });
     }
     if (emotionFilter !== 'all') result = result.filter(e => e.emotion === emotionFilter);
-    if (photoOnly) result = result.filter(e => !!e.photo);
+    if (photoOnly) result = result.filter(e => !!e.photo || (e.photos && e.photos.length > 0));
+    if (audioOnly) result = result.filter(e => !!e.audio || (e.audios && e.audios.length > 0));
     if (reflectionOnly) result = result.filter(e => (e.reflections?.length ?? 0) > 0);
     if (sortOrder === 'asc') result.reverse();
     return result;
-  }, [entries, selectedMonth, searchQuery, emotionFilter, photoOnly, reflectionOnly, sortOrder]);
+  }, [entries, selectedMonth, searchQuery, emotionFilter, photoOnly, audioOnly, reflectionOnly, sortOrder]);
 
   // Group by year-month for "월별 보기"
   const grouped = useMemo(() => {
@@ -173,7 +175,13 @@ export default function Archive() {
                   onClick={() => setPhotoOnly(v => !v)}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${photoOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
                 >
-                  📷 사진 있음
+                  📷 사진
+                </button>
+                <button
+                  onClick={() => setAudioOnly(v => !v)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${audioOnly ? 'bg-primary text-white shadow-sm' : 'bg-card border border-card-border text-foreground'}`}
+                >
+                  🎵 음성
                 </button>
                 <button
                   onClick={() => setReflectionOnly(v => !v)}
