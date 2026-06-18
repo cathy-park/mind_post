@@ -426,6 +426,8 @@ export function useAddEntry() {
           long_answer: entry.longAnswer ?? null,
           photo_url: photoUrl,
           audio_url: audioUrl,
+          //audio_urls omitted for compatibility
+
         })
         .select('*, reflection_comments(*)')
         .single();
@@ -464,7 +466,7 @@ export function useUpdateEntry() {
           short_answer: updated.shortAnswer,
           long_answer: updated.longAnswer ?? null,
           photo_url: photoUrl,
-          audio_url: audioUrl,
+          audio_urls: audioUrl ? [audioUrl] : [],
           entry_date: updated.date,
           updated_at: new Date().toISOString(),
         })

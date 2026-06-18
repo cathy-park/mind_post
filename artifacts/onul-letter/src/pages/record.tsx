@@ -111,6 +111,10 @@ export default function Record() {
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLInputElement>(null);
+  // Recorder refs for audio recording
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
 
@@ -459,12 +463,24 @@ export default function Record() {
                       </button>
                     )}
                     {!audio && (
-                      <button
-                        onClick={() => audioRef.current?.click()}
-                        className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
-                      >
-                        <Mic className="w-5 h-5" /> 음원 추가
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => audioRef.current?.click()}
+                          className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                        >
+                          <Mic className="w-5 h-5" /> 파일 업로드
+                        </button>
+                        <button
+                          onClick={isRecording ? stopRecording : startRecording}
+                          className={`flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors ${isRecording ? 'bg-red-100' : ''}`}
+                        >
+                          {isRecording ? (
+                            '녹음 중지'
+                          ) : (
+                            <><Mic className="w-5 h-5" /> 녹음</>
+                          )}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

@@ -18,7 +18,7 @@ type Report = {
 
 async function getUsedPaths(): Promise<Set<string>> {
   const used = new Set<string>();
-  const { data, error } = await supabase.from('entries').select('photo_url');
+  const { data, error } = await supabase.from('entries').select('photo_url, audio_url, audio_urls');
   if (error) {
     console.error('Failed to fetch entries:', error);
     return used;
@@ -27,6 +27,16 @@ async function getUsedPaths(): Promise<Set<string>> {
     if (e.photo_url) {
       const p = extractPath(e.photo_url);
       if (p) used.add(`journal-photos/${p}`);
+    }
+    if (e.audio_url) {
+      const p = extractPath(e.audio_url);
+      if (p) used.add(`journal-audios/${p}`);
+    }
+    if (e.audio_urls && Array.isArray(e.audio_urls)) {
+      e.audio_urls.forEach((url: string) => {
+        const p = extractPath(url);
+        if (p) used.add(`journal-audios/${p}`);
+      });
     }
   });
   return used;
