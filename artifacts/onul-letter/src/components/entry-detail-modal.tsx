@@ -26,8 +26,10 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
   const [emotion, setEmotion] = useState<EmotionType>(initialEntry.emotion);
   const [shortAnswer, setShortAnswer] = useState(initialEntry.shortAnswer);
   const [longAnswer, setLongAnswer] = useState(initialEntry.longAnswer ?? '');
-  const [photo, setPhoto] = useState<string | undefined>(initialEntry.photo);
-  const [audio, setAudio] = useState<string | undefined>(initialEntry.audio);
+  const [photos, setPhotos] = useState<string[]>(initialEntry.photo ? [initialEntry.photo] : []);
+  const [audios, setAudios] = useState<string[]>(initialEntry.audio ? [initialEntry.audio] : []);
+  const MAX_PHOTOS = 5;
+  const MAX_AUDIOS = 3;
 
   // Reflection
   const [reflectionText, setReflectionText] = useState('');
@@ -53,22 +55,26 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
   const reflections = entry.reflections ?? [];
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = MAX_PHOTOS - photos.length;
+    Array.from(files).slice(0, remaining).forEach(file => {
       const reader = new FileReader();
-      reader.onloadend = () => setPhoto(reader.result as string);
+      reader.onloadend = () => setPhotos(prev => prev.length < MAX_PHOTOS ? [...prev, reader.result as string] : prev);
       reader.readAsDataURL(file);
-    }
+    });
     e.target.value = '';
   };
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = MAX_AUDIOS - audios.length;
+    Array.from(files).slice(0, remaining).forEach(file => {
       const reader = new FileReader();
-      reader.onloadend = () => setAudio(reader.result as string);
+      reader.onloadend = () => setAudios(prev => prev.length < MAX_AUDIOS ? [...prev, reader.result as string] : prev);
       reader.readAsDataURL(file);
-    }
+    });
     e.target.value = '';
   };
 
@@ -86,7 +92,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
       recorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const reader = new FileReader();
-        reader.onloadend = () => setAudio(reader.result as string);
+        reader.onloadend = () => setAudios(prev => prev.length < MAX_AUDIOS ? [...prev, reader.result as string] : prev);
         reader.readAsDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
       };
@@ -113,8 +119,8 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
       question: resolveEmotion(emotion).question || entry.question,
       shortAnswer: shortAnswer.trim(),
       longAnswer: longAnswer.trim() || undefined,
-      photo,
-      audio,
+      photo: photos[0],
+      audio: audios[0],
     });
     setEntry(updated);
     setScreen('view');
@@ -433,37 +439,46 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                   <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">미디어 첨부</p>
 
                   {/* hidden inputs */}
-                  <input type="file" accept="image/*" className="hidden" ref={galleryRef} onChange={handlePhotoUpload} />
+                  <input type="file" accept="image/*" multiple className="hidden" ref={galleryRef} onChange={handlePhotoUpload} />
                   <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraRef} onChange={handlePhotoUpload} />
-                  <input type="file" accept="audio/*" className="hidden" ref={audioRef} onChange={handleAudioUpload} />
+                  <input type="file" accept="audio/*" multiple className="hidden" ref={audioRef} onChange={handleAudioUpload} />
 
-                  {/* 사진 */}
-                  {photo ? (
-                    <div className="relative rounded-2xl overflow-hidden border border-border">
-                      <img src={photo} alt="사진" className="w-full object-cover" />
-                      <button onClick={() => setPhoto(undefined)} className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full"><X className="w-4 h-4" /></button>
-                    </div>
-                  ) : null}
-
-                  {/* 음원 */}
-                  {audio ? (
-                    <div className="rounded-2xl border border-border p-3 bg-muted/40">
-                      {isRecording ? (
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                          <span className="text-sm text-red-500 font-medium flex-1">녹음 중...</span>
-                          <button onClick={stopRecording} className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-xl text-xs font-semibold">
-                            <Square className="w-3 h-3 fill-current" /> 중지
+                  {/* 사진 캐러셀 */}
+                  {photos.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+                      {photos.map((p, idx) => (
+                        <div key={idx} className="relative flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden border border-border snap-start">
+                          <img src={p} alt={`사진 ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/55 text-white p-1 rounded-full">
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <audio controls src={audio} className="w-full" />
-                          <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"><X className="w-4 h-4" /></button>
-                        </div>
+                      ))}
+                      {photos.length < MAX_PHOTOS && (
+                        <button onClick={() => setShowPhotoOptions(true)}
+                          className="flex-shrink-0 w-28 h-28 rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground text-xs hover:bg-muted/30 transition-colors snap-start">
+                          <Camera className="w-5 h-5" />
+                          <span>추가</span>
+                        </button>
                       )}
                     </div>
-                  ) : isRecording ? (
+                  )}
+
+                  {/* 음원 목록 */}
+                  {audios.length > 0 && (
+                    <div className="space-y-2">
+                      {audios.map((src, idx) => (
+                        <div key={idx} className="rounded-2xl border border-border p-3 bg-muted/40 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground font-bold flex-shrink-0 w-5 text-center">{idx + 1}</span>
+                          <audio controls src={src} className="w-full" />
+                          <button onClick={() => setAudios(prev => prev.filter((_, i) => i !== idx))} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {isRecording && (
                     <div className="rounded-2xl border border-red-200 dark:border-red-800 p-3 bg-red-50 dark:bg-red-900/20 flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       <span className="text-sm text-red-500 font-medium flex-1">녹음 중...</span>
@@ -471,11 +486,11 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                         <Square className="w-3 h-3 fill-current" /> 중지
                       </button>
                     </div>
-                  ) : null}
+                  )}
 
                   {/* 추가 버튼 */}
                   <div className="flex gap-2">
-                    {!photo && (
+                    {photos.length === 0 && (
                       <button
                         onClick={() => setShowPhotoOptions(true)}
                         className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
@@ -483,12 +498,12 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                         <Camera className="w-5 h-5" /> 사진 추가
                       </button>
                     )}
-                    {!audio && !isRecording && (
+                    {audios.length < MAX_AUDIOS && !isRecording && (
                       <button
                         onClick={() => setShowAudioOptions(true)}
                         className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
                       >
-                        <Mic className="w-5 h-5" /> 음원 추가
+                        <Mic className="w-5 h-5" /> 음원 추가{audios.length > 0 ? ` (${audios.length}/${MAX_AUDIOS})` : ''}
                       </button>
                     )}
                   </div>

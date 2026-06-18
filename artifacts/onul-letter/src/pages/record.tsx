@@ -164,7 +164,8 @@ export default function Record() {
   const [shortAnswer, setShortAnswer] = useState('');
   const [longAnswer, setLongAnswer] = useState('');
   const [photos, setPhotos] = useState<string[]>([]); // multi-photo array
-  const [audio, setAudio] = useState<string | undefined>();
+  const [audios, setAudios] = useState<string[]>([]); // multi-audio array
+  const MAX_AUDIOS = 3;
   const [isSuccess, setIsSuccess] = useState(false);
   const [savedAsGuest, setSavedAsGuest] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
@@ -211,11 +212,17 @@ export default function Record() {
   };
 
   const handleAudioFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setAudio(reader.result as string);
-    reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = MAX_AUDIOS - audios.length;
+    const toLoad = Array.from(files).slice(0, remaining);
+    toLoad.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAudios(prev => prev.length < MAX_AUDIOS ? [...prev, reader.result as string] : prev);
+      };
+      reader.readAsDataURL(file);
+    });
     e.target.value = '';
   };
 
@@ -231,7 +238,9 @@ export default function Record() {
       recorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const reader = new FileReader();
-        reader.onloadend = () => setAudio(reader.result as string);
+        reader.onloadend = () => {
+          setAudios(prev => prev.length < MAX_AUDIOS ? [...prev, reader.result as string] : prev);
+        };
         reader.readAsDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
       };
@@ -266,7 +275,7 @@ export default function Record() {
         shortAnswer: shortAnswer.trim(),
         longAnswer: longAnswer.trim() || undefined,
         photo: photos[0], // first photo for DB (single column)
-        audio,
+        audio: audios[0], // first audio for DB (single column)
       });
       setIsSuccess(true);
       if (!isGuest) {
@@ -529,6 +538,7 @@ export default function Record() {
                 <input
                   type="file"
                   accept="audio/*"
+                  multiple
                   className="hidden"
                   ref={audioRef}
                   onChange={handleAudioFile}
@@ -565,33 +575,24 @@ export default function Record() {
                   </div>
                 )}
 
-                {/* Audio display */}
-                {audio ? (
-                  <div className="relative rounded-2xl border border-border p-3 bg-card">
-                    {isRecording ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-sm text-red-500 font-medium">녹음 중...</span>
+                {/* Audio list */}
+                {audios.length > 0 && (
+                  <div className="space-y-2">
+                    {audios.map((src, idx) => (
+                      <div key={idx} className="rounded-2xl border border-border p-3 bg-card flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-bold flex-shrink-0 w-5 text-center">{idx + 1}</span>
+                        <audio controls src={src} className="w-full" />
                         <button
-                          onClick={stopRecording}
-                          className="ml-auto flex items-center gap-1 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl text-xs font-semibold"
-                        >
-                          <Square className="w-3 h-3 fill-current" /> 중지
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <audio controls src={audio} className="w-full" />
-                        <button
-                          onClick={() => setAudio(undefined)}
+                          onClick={() => setAudios(prev => prev.filter((_, i) => i !== idx))}
                           className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
-                    )}
+                    ))}
                   </div>
-                ) : isRecording ? (
+                )}
+                {isRecording ? (
                   <div className="rounded-2xl border border-red-200 dark:border-red-800 p-3 bg-red-50 dark:bg-red-900/20 flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-sm text-red-500 font-medium flex-1">녹음 중...</span>
@@ -614,12 +615,12 @@ export default function Record() {
                       <Camera className="w-5 h-5" /> 사진 추가
                     </button>
                   )}
-                  {!audio && !isRecording && (
+                  {audios.length < MAX_AUDIOS && !isRecording && (
                     <button
                       onClick={() => setShowAudioOptions(true)}
                       className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
                     >
-                      <Mic className="w-5 h-5" /> 음원 추가
+                      <Mic className="w-5 h-5" /> 음원 추가{audios.length > 0 ? ` (${audios.length}/${MAX_AUDIOS})` : ''}
                     </button>
                   )}
                 </div>
