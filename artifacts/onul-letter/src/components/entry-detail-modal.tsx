@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Pencil, Trash2, Camera, Loader2, ChevronLeft, Send, MessageCircle, Mic } from 'lucide-react';
+import { X, Pencil, Trash2, Camera, Loader2, ChevronLeft, Send, MessageCircle, Mic, Upload, Square, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { JournalEntry, EMOTIONS, EmotionType } from '@/lib/constants';
 import { resolveEmotion } from '@/lib/emotion-utils';
@@ -36,6 +36,13 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
 
   const fileRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [showAudioOptions, setShowAudioOptions] = useState(false);
   const { mutateAsync: updateEntry, isPending: isSaving } = useUpdateEntry();
   const { mutateAsync: deleteEntry, isPending: isDeleting } = useDeleteEntry();
   const { mutateAsync: addReflection, isPending: isAddingReflection } = useAddReflection();
@@ -52,6 +59,7 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
       reader.onloadend = () => setPhoto(reader.result as string);
       reader.readAsDataURL(file);
     }
+    e.target.value = '';
   };
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,6 +69,39 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
       reader.onloadend = () => setAudio(reader.result as string);
       reader.readAsDataURL(file);
     }
+    e.target.value = '';
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : 'audio/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (ev) => { if (ev.data.size > 0) recordedChunksRef.current.push(ev.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        const reader = new FileReader();
+        reader.onloadend = () => setAudio(reader.result as string);
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setIsRecording(true);
+      setShowAudioOptions(false);
+    } catch {
+      alert('마이크 접근 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.');
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    setIsRecording(false);
   };
 
   const handleSave = async () => {
@@ -391,7 +432,9 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">미디어 첨부</p>
 
-                  <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handlePhotoUpload} />
+                  {/* hidden inputs */}
+                  <input type="file" accept="image/*" className="hidden" ref={galleryRef} onChange={handlePhotoUpload} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraRef} onChange={handlePhotoUpload} />
                   <input type="file" accept="audio/*" className="hidden" ref={audioRef} onChange={handleAudioUpload} />
 
                   {/* 사진 */}
@@ -404,33 +447,51 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
 
                   {/* 음원 */}
                   {audio ? (
-                    <div className="rounded-2xl border border-border p-3 bg-muted/40 flex items-center gap-2">
-                      <audio controls src={audio} className="w-full" />
-                      <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"><X className="w-4 h-4" /></button>
+                    <div className="rounded-2xl border border-border p-3 bg-muted/40">
+                      {isRecording ? (
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          <span className="text-sm text-red-500 font-medium flex-1">녹음 중...</span>
+                          <button onClick={stopRecording} className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-xl text-xs font-semibold">
+                            <Square className="w-3 h-3 fill-current" /> 중지
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <audio controls src={audio} className="w-full" />
+                          <button onClick={() => setAudio(undefined)} className="bg-black/10 hover:bg-black/20 dark:bg-white/10 text-foreground p-1.5 rounded-full flex-shrink-0 transition-colors"><X className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+                  ) : isRecording ? (
+                    <div className="rounded-2xl border border-red-200 dark:border-red-800 p-3 bg-red-50 dark:bg-red-900/20 flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-sm text-red-500 font-medium flex-1">녹음 중...</span>
+                      <button onClick={stopRecording} className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-xl text-xs font-semibold">
+                        <Square className="w-3 h-3 fill-current" /> 중지
+                      </button>
                     </div>
                   ) : null}
 
-                  {/* 미첨부 시 버튼 */}
-                  {(!photo || !audio) && (
-                    <div className="flex gap-2">
-                      {!photo && (
-                        <button
-                          onClick={() => fileRef.current?.click()}
-                          className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
-                        >
-                          <Camera className="w-5 h-5" /> 사진 추가
-                        </button>
-                      )}
-                      {!audio && (
-                        <button
-                          onClick={() => audioRef.current?.click()}
-                          className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
-                        >
-                          <Mic className="w-5 h-5" /> 음원 추가
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {/* 추가 버튼 */}
+                  <div className="flex gap-2">
+                    {!photo && (
+                      <button
+                        onClick={() => setShowPhotoOptions(true)}
+                        className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                      >
+                        <Camera className="w-5 h-5" /> 사진 추가
+                      </button>
+                    )}
+                    {!audio && !isRecording && (
+                      <button
+                        onClick={() => setShowAudioOptions(true)}
+                        className="flex-1 py-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-2 text-muted-foreground text-sm hover:bg-muted/30 transition-colors"
+                      >
+                        <Mic className="w-5 h-5" /> 음원 추가
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -455,6 +516,74 @@ export function EntryDetailModal({ entry: initialEntry, onClose, showMascotFoote
           </div>
         )}
       </motion.div>
+
+      {/* Photo picker sheet */}
+      <AnimatePresence>
+        {showPhotoOptions && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowPhotoOptions(false)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.38 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md bg-card rounded-t-3xl pt-5 px-5 shadow-2xl space-y-2"
+              style={{ paddingBottom: 'max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))' }}
+            >
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-4" />
+              <p className="text-xs font-bold tracking-widest uppercase text-center text-muted-foreground mb-3">사진 추가</p>
+              <button onClick={() => { setShowPhotoOptions(false); setTimeout(() => galleryRef.current?.click(), 100); }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted transition-colors text-left">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Image className="w-5 h-5 text-primary" /></div>
+                <div><p className="font-bold text-foreground">앨범에서 선택</p><p className="text-xs text-muted-foreground mt-0.5">갤러리에서 사진을 골라요</p></div>
+              </button>
+              <button onClick={() => { setShowPhotoOptions(false); setTimeout(() => cameraRef.current?.click(), 100); }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted transition-colors text-left">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Camera className="w-5 h-5 text-primary" /></div>
+                <div><p className="font-bold text-foreground">카메라로 촬영</p><p className="text-xs text-muted-foreground mt-0.5">지금 바로 찍어서 추가해요</p></div>
+              </button>
+              <button onClick={() => setShowPhotoOptions(false)} className="w-full py-3 rounded-2xl text-sm font-semibold text-muted-foreground">취소</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Audio picker sheet */}
+      <AnimatePresence>
+        {showAudioOptions && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowAudioOptions(false)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.38 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md bg-card rounded-t-3xl pt-5 px-5 shadow-2xl space-y-2"
+              style={{ paddingBottom: 'max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))' }}
+            >
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-4" />
+              <p className="text-xs font-bold tracking-widest uppercase text-center text-muted-foreground mb-3">음원 추가</p>
+              <button onClick={() => { setShowAudioOptions(false); startRecording(); }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted transition-colors text-left">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0"><Mic className="w-5 h-5 text-red-500" /></div>
+                <div><p className="font-bold text-foreground">바로 녹음하기</p><p className="text-xs text-muted-foreground mt-0.5">마이크로 지금 바로 녹음해요</p></div>
+              </button>
+              <button onClick={() => { setShowAudioOptions(false); setTimeout(() => audioRef.current?.click(), 100); }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted transition-colors text-left">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Upload className="w-5 h-5 text-primary" /></div>
+                <div><p className="font-bold text-foreground">파일 업로드</p><p className="text-xs text-muted-foreground mt-0.5">저장된 오디오 파일을 선택해요</p></div>
+              </button>
+              <button onClick={() => setShowAudioOptions(false)} className="w-full py-3 rounded-2xl text-sm font-semibold text-muted-foreground">취소</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
