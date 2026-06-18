@@ -10,10 +10,10 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const tabs = [
-  { href: '/home',        icon: Home,         label: '홈' },
+  { href: '/',            icon: Home,         label: '홈' },
   { href: '/record',      icon: PenLine,       label: '기록' },
   { href: '/calendar',    icon: CalendarDays,  label: '달력' },
-  { href: '/',            icon: Archive,       label: '보관함' },
+  { href: '/archive',     icon: Archive,       label: '보관함' },
   { href: '/time-letter', icon: Mail,          label: '편지함' },
   { href: '/settings',    icon: Settings,      label: '설정' },
 ];
