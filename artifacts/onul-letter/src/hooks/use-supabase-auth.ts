@@ -152,30 +152,14 @@ export function useSupabaseAuth(): AuthState {
     }, 3000);
 
     try {
-      // DB가 깨어날 때까지 대기 (최대 반복)
-      for (let i = 0; i < 10; i++) {
-        const { error } = await supabase.from('entries').select('id').limit(1);
-        
-        // 에러가 없거나, 5xx 에러(서버 준비 중)가 아니면 깨어난 것으로 간주
-        const isServerStarting = error && (
-          error.code === '504' || 
-          error.code === '503' || 
-          error.code === '502' || 
-          error.message?.includes('timeout') ||
-          error.message?.includes('Failed to fetch')
-        );
-
-        if (!isServerStarting) {
-          isAwake = true;
-          break;
-        }
-        await new Promise(r => setTimeout(r, 5000));
-      }
+      // DB 깨우기 요청 (1회만 비동기로 날리고 기다리지 않음, 타임아웃 방지)
+      supabase.from('entries').select('id').limit(1).then(() => {});
       
       clearTimeout(timeoutId);
       const redirectTo = getRedirectUrl();
       
-      // DB가 깨어난 것이 확인된 후 OAuth 리다이렉트 실행 (504 에러 방지)
+      // 즉시 OAuth 리다이렉트 실행
+
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
