@@ -11,6 +11,7 @@ import { EMOTIONS, EmotionType, PRIMARY_EMOTIONS, EXTENDED_EMOTIONS } from '@/li
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { useCustomEmotions, CustomEmotion } from '@/hooks/use-custom-emotions';
 import { AddEmotionSheet } from '@/components/add-emotion-sheet';
+import imageCompression from 'browser-image-compression';
 
 const MOA_STATIC_MESSAGES: Record<string, { sub?: string }> = {
   chosen:  { sub: '한 문장으로도 충분해요' },
@@ -196,18 +197,38 @@ export default function Record() {
 
   const moaPose = moaStep === 'idle' ? 'entry' : moaStep === 'ready' ? 'success' : 'prompt';
 
-  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const remaining = MAX_PHOTOS - photos.length;
     const toLoad = Array.from(files).slice(0, remaining);
-    toLoad.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotos(prev => prev.length < MAX_PHOTOS ? [...prev, reader.result as string] : prev);
-      };
-      reader.readAsDataURL(file);
-    });
+    
+    // 압축 옵션 설정: 최대 1024px, 80% 화질 (용량 약 100~200KB 수준으로 최적화)
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+      initialQuality: 0.8,
+    };
+
+    for (const file of toLoad) {
+      try {
+        const compressedFile = await imageCompression(file, options);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotos(prev => prev.length < MAX_PHOTOS ? [...prev, reader.result as string] : prev);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (err) {
+        console.error('Image compression error:', err);
+        // 압축 실패 시 원본 그대로 사용
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotos(prev => prev.length < MAX_PHOTOS ? [...prev, reader.result as string] : prev);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
     e.target.value = '';
   };
 
@@ -232,7 +253,8 @@ export default function Record() {
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : 'audio/webm';
-      const recorder = new MediaRecorder(stream, { mimeType });
+      // 용량 최적화를 위해 비트레이트를 16000(16kbps)으로 낮춤
+      const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 16000 });
       recordedChunksRef.current = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data); };
       recorder.onstop = () => {
