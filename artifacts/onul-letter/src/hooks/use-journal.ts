@@ -96,7 +96,7 @@ export async function uploadPhoto(base64: string, userId: string, date: string):
 
   if (error) {
     console.error('Photo upload error:', error);
-    return base64;
+    throw new Error(`사진 업로드에 실패했습니다. (서버 응답: ${error.message})`);
   }
 
   const { data: { publicUrl } } = supabase.storage
@@ -124,7 +124,7 @@ export async function uploadAudio(base64: string, userId: string, date: string):
 
   if (error) {
     console.error('Audio upload error:', error);
-    return base64;
+    throw new Error(`음성 업로드에 실패했습니다. (서버 응답: ${error.message})`);
   }
 
   const { data: { publicUrl } } = supabase.storage
