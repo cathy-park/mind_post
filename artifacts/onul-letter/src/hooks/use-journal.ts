@@ -157,7 +157,7 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
     const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 대기
     const resp = await fetch(url, {
       headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
       signal: controller.signal
