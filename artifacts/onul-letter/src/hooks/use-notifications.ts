@@ -1,5 +1,5 @@
 import { useTodayEntry, useTimeLetters, useSettings } from './use-journal';
-import { JournalEntry } from '@/lib/constants';
+import { JournalEntry, EMOTIONS } from '@/lib/constants';
 
 export type NotificationType = 'daily' | 'lastWeek' | 'lastMonth' | 'lastYear';
 
@@ -51,7 +51,7 @@ export function useNotifications(): UseNotificationsResult {
     if (conditions.lastYear && timeLetters?.lastYear) {
       active.push({
         id: 'lastYear',
-        icon: '✉️',
+        icon: EMOTIONS[timeLetters.lastYear.emotion as keyof typeof EMOTIONS]?.emoji || '✉️',
         title: '작년 오늘의 편지가 도착했어요',
         sub: `1년 전 오늘, ${timeLetters.lastYear.emotion}의 하루였어요`,
         entry: timeLetters.lastYear,
@@ -60,7 +60,7 @@ export function useNotifications(): UseNotificationsResult {
     if (conditions.lastMonth && timeLetters?.lastMonth) {
       active.push({
         id: 'lastMonth',
-        icon: '📅',
+        icon: EMOTIONS[timeLetters.lastMonth.emotion as keyof typeof EMOTIONS]?.emoji || '📅',
         title: '한 달 전 오늘의 편지가 도착했어요',
         sub: `한 달 전 오늘, ${timeLetters.lastMonth.emotion}의 마음이었어요`,
         entry: timeLetters.lastMonth,
@@ -69,7 +69,7 @@ export function useNotifications(): UseNotificationsResult {
     if (conditions.lastWeek && timeLetters?.lastWeek) {
       active.push({
         id: 'lastWeek',
-        icon: '🔁',
+        icon: EMOTIONS[timeLetters.lastWeek.emotion as keyof typeof EMOTIONS]?.emoji || '🔁',
         title: '지난주 오늘의 기록이 기다리고 있어요',
         sub: `일주일 전 오늘, ${timeLetters.lastWeek.emotion}의 하루를 보냈어요`,
         entry: timeLetters.lastWeek,

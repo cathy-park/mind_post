@@ -53,8 +53,8 @@
   --color-lavender: hsl(260 40% 85%);
   --color-sage: hsl(130 30% 85%);
 
-  --font-sans: 'Noto Sans KR', 'Tossface', sans-serif;
-  --font-display: 'Gowun Dodum', 'Tossface', sans-serif;
+  --font-sans: 'Tossface', 'Noto Sans KR', sans-serif;
+  --font-display: 'Tossface', 'Gowun Dodum', sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
