@@ -151,7 +151,7 @@ function getStoredSupabaseSession(): {
 }
 
 // Supabase REST API 직접 호출 (JS 클라이언트 초기화 대기 및 race condition 방지)
-async function fetchDirect(accessToken: string, userId: string): Promise<JournalEntry[] | null> {
+async function fetchDirect(accessToken: string, userId: string): Promise<JournalEntry[]> {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -166,7 +166,7 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
     if (!resp.ok) {
       const errText = await resp.text();
       console.error('fetchDirect server error:', resp.status, errText);
-      return null;
+      throw new Error(`서버 오류 (${resp.status}): ${errText}`);
     }
     const data: DbEntry[] = await resp.json();
     const entries = data.map(dbToEntry);
@@ -174,9 +174,9 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
       saveEntriesToCache(entries, userId);
     }
     return entries;
-  } catch (e) {
+  } catch (e: any) {
     console.error('fetchDirect error:', e);
-    return null;
+    throw new Error(e.message || '네트워크 요청 중 오류가 발생했습니다.');
   }
 }
 
@@ -189,9 +189,7 @@ async function triggerBackgroundFetch(accessToken: string, userId: string) {
   _bgFetching = true;
   try {
     const entries = await fetchDirect(accessToken, userId);
-    if (entries !== null) {
-      queryClient.setQueryData(['entries'], entries);
-    }
+    queryClient.setQueryData(['entries'], entries);
   } catch (err) {
     console.error('Background fetch error:', err);
   } finally {
@@ -242,11 +240,6 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
   console.log('[fetchAllEntries] Supabase fetchDirect 조회 실행');
   const entries = await fetchDirect(session.access_token, session.user.id);
   
-  if (entries === null) {
-    // 에러 발생 시 빈 배열 반환 (UI에서 로딩 끝나고 빈 화면으로 넘어가는 걸 막으려면 throw 하는 게 좋음)
-    throw new Error('Failed to fetch entries from Supabase');
-  }
-
   console.log('[fetchAllEntries] 조회 완료, 건수', entries.length);
   if (entries.length > 0) {
     saveEntriesToCache(entries, session.user.id);
