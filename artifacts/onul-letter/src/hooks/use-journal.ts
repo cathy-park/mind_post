@@ -156,9 +156,13 @@ async function fetchDirect(accessToken: string, userId: string): Promise<Journal
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
     const url = `${supabaseUrl}/rest/v1/entries?select=*,reflection_comments(*)&order=entry_date.desc,created_at.desc`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const resp = await fetch(url, {
       headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       const errText = await resp.text();
       console.error('fetchDirect server error:', resp.status, errText);
@@ -212,7 +216,21 @@ async function fetchAllEntries(): Promise<JournalEntry[]> {
 
   // 2️⃣ 세션 확보
   console.log('[fetchAllEntries] 세션 확보 시도');
-  const { data: { session } = { session: null } } = await supabase.auth.getSession();
+  let session = null;
+  try {
+    const res = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('getSession timeout')), 3000))
+    ]) as any;
+    session = res?.data?.session;
+  } catch (err) {
+    console.warn('[fetchAllEntries] getSession timed out or failed, falling back to local storage', err);
+    const stored = getStoredSupabaseSession();
+    if (stored && stored.access_token && stored.user) {
+      session = { user: stored.user, access_token: stored.access_token };
+    }
+  }
+
   if (!session?.user) {
     console.log('[fetchAllEntries] 비회원 처리');
     return getGuestEntries()
